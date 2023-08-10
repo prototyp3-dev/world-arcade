@@ -19,7 +19,7 @@ func (c Cartridge) MarshalJSON() ([]byte, error) {
     Id string               `json:"id"`
     Name string             `json:"name"`
     UserAddress string      `json:"userAddress"`
-    CreatedAt uint64        `json:"lastEdited"`
+    CreatedAt uint64        `json:"createdAt"`
     Card string             `json:"card"`
   }{c.Id,c.Name,c.UserAddress,c.CreatedAt,rollups.Bin2Hex(c.Card)})
 }
