@@ -1,0 +1,39 @@
+@import "bootstrap/scss/bootstrap.scss";
+
+body {
+    //background-color: darkturquoise;
+    background-image: url("../../public/wallpaper.jpg");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.header-image-left {
+    transform: rotate(-30deg);
+}
+
+.header-image-right {
+    transform: scaleX(-1) rotate(-30deg);
+}
+
+// Change Nav.link default color to 
+.nav-link, .nav-link:hover {
+    color:#F8F9FA;
+}
+
+.nav-link.active{
+    color:#F8F9FA !important;
+}
+
+.pacman_loading {
+    background-image: url("../../public/pacman_loading.gif");
+    height: 362px; // heigh of pacman_loading.gif
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.box-shadow-hover:hover{
+    //box-shadow: 0 .5rem 1rem rgba($light, .15);
+    border: 1px solid #F8F9FA;
+    cursor: pointer;
+}
