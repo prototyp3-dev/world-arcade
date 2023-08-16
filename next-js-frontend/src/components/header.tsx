@@ -1,8 +1,8 @@
 import { useConnectWallet } from "@web3-onboard/react";
 import { Button, Nav, Navbar, Stack } from "react-bootstrap";
+import { GiDisc } from "react-icons/gi";
 
-
-export default function Header() {
+export default function Header({activeKey}: {activeKey:string}) {
     const [{ wallet, connecting }, connect, disconnect] = useConnectWallet()
 
 
@@ -27,21 +27,21 @@ export default function Header() {
                     />
                 </Navbar.Brand>
 
-                <Nav variant="underline" className="justify-content-center" activeKey="/">
+                <Nav variant="underline" className="justify-content-center" activeKey={activeKey}>
                     <Nav.Item>
                         <Nav.Link href="/">Home</Nav.Link>
                     </Nav.Item>
-                    
+
                     <Nav.Item>
-                        <Nav.Link eventKey="link-1">Upload</Nav.Link>
+                        <Nav.Link href="/upload">Upload<span className="ms-1"><GiDisc/></span></Nav.Link>
                     </Nav.Item>
-                    
+
                     <Nav.Item>
-                        <Nav.Link eventKey="link-2">How To</Nav.Link>
+                        <Nav.Link href="/how_to">How To</Nav.Link>
                     </Nav.Item>
-                    
+
                     <Nav.Item>
-                        <Nav.Link eventKey="link-2">About</Nav.Link>
+                        <Nav.Link href="/about">About</Nav.Link>
                     </Nav.Item>
                 </Nav>
 

@@ -6,7 +6,7 @@ import Footer from "@/components/footer";
 export default function HomePage() {
   return (
     <Container>
-      <Header/>
+      <Header activeKey="/"/>
       <CartridgesList/>
       <Footer/>
     </Container>
