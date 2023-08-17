@@ -17,7 +17,7 @@ export default function Header({activeKey}: {activeKey:string}) {
                         width="60"
                         height="60"
                     />
-                    <h1 className="text-light m-2">Cartesi Arcade</h1>
+                    <h1 className="text-light m-2">World Arcade</h1>
                     <img
                         className="header-image-right"
                         alt="Cartesi Arcade Image"

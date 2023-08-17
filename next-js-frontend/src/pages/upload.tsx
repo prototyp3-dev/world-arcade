@@ -1,14 +1,23 @@
 import Footer from "@/components/footer";
 import Header from "@/components/header";
 import { useState } from "react";
-import { Button, Col, Container, FloatingLabel, Form, Row } from "react-bootstrap";
+import { Button, Col, Container, FloatingLabel, Form, Row, Stack } from "react-bootstrap";
 import { IoWarning } from "react-icons/io5";
 import { GiLoad, GiDisc } from "react-icons/gi";
+import { ethers } from "ethers";
+import { useConnectWallet } from "@web3-onboard/react";
+import { IInputBox__factory } from "@cartesi/rollups";
+import { useRouter } from "next/router";
+import { WalletState } from "@web3-onboard/core";
 
 
-// function upload(title:string|null, description:string|null) {
+enum PageStatus {
+    Ready,
+    UploadCartridge,
+    UploadEdit // CoverImage upload
+}
 
-// }
+const maxSizeToSend = 409600;
 
 function additional_tx_warning() {
     return (
@@ -42,20 +51,131 @@ async function handle_file_input(e:React.ChangeEvent<HTMLInputElement>, callback
     reader.readAsArrayBuffer(file);
 }
 
+async function addInput(wallet:WalletState|null, id:string, data:Uint8Array, setChunk:Function, encodeChunk:Function, encode:Function) {
+    if (!wallet) {
+        alert("Connect first to upload a cartridge.");
+        return;
+    }
+
+    if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
+        console.log("Input BOX addr not defined");
+        return;
+    }
+
+    const signer = new ethers.providers.Web3Provider(wallet.provider, 'any').getSigner();
+    const inputContract = new ethers.Contract(process.env.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
+    let input;
+
+    if (data.length > maxSizeToSend) {
+        const chunks = (window as any).prepareData(ethers.utils.hexlify(data), maxSizeToSend);
+        for (let c = 0; c < chunks.length; c += 1) {
+            const chunkToSend = chunks[c];
+            setChunk([c+1, chunks.length]);
+            input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, encodeChunk(id, chunkToSend));
+            await input.wait();
+        }
+    } else {
+        setChunk([1,1]);
+        input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, encode(id, ethers.utils.hexlify(data)));
+    }
+
+    const receipt = await input.wait();
+    return receipt;
+}
+
+async function check_game_report(input_index:number) {
+    let url = `${process.env.NEXT_PUBLIC_GRAPHQL_URL}`;
+    let query = `{"query":"query reportsByInput {input(index: ${input_index}) {reports {edges {node {index input {index} payload}}}}}"}`;
+
+    while (true) {
+        let response = await fetch(url, {method: 'POST', mode: 'cors', headers: {"Content-Type": "application/json"}, body: query});
+        if (!response.ok) {
+            throw Error(`Failed to retrieve info from GRAPHQL (${process.env.NEXT_PUBLIC_GRAPHQL_URL}).`);
+        }
+
+        let report = await response.json();
+
+        if (!report.data) {
+            await sleep(200); // "sleep" for 200 ms
+        } else if (report.data.input.reports.edges.length == 0) {
+            throw Error("Failed to locate report.");
+        } else {
+            const payload_utf8 = ethers.utils.toUtf8String(report.data.input.reports.edges[0].node.payload);
+            const payload_json = JSON.parse(payload_utf8);
+
+            if (payload_json.status == "STATUS_SUCCESS") {
+                const game_id = payload_json.hash;
+                return game_id;
+            }
+        }
+    }
+}
+
+function sleep(ms:number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export default function UploadCartridge() {
+    const router = useRouter();
+    const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
+
     const [cartridgeTitle, setCartridgeTitle] = useState<string|null>(null);
-    const [cartridgeDescription, setCartridgeDescription] = useState<string|null>(null);
-    const [cartridge, setCartridge] = useState<any|null>(null);
-    const [coverImage, setCoverImage] = useState<any|null>(null);
+    // const [cartridgeDescription, setCartridgeDescription] = useState<string|null>(null);
+    const [cartridge, setCartridge] = useState<Uint8Array|null>(null);
+    const [coverImage, setCoverImage] = useState<Uint8Array|null>(null);
     const [coverImagePreview, setCoverImagePreview] = useState<any|null>(null);
+
+    // used for feedback when uploading a cartridge and/or coverImage
+    const [chunksCartridge, setChunksCartridge] = useState<number[]>([0, 0]);
+    const [chunksCoverImage, setChunksCoverImage] = useState<number[]>([0, 0]);
+
+    // Page Status
+    const [pageStatus, setPageStatus] = useState(PageStatus.Ready);
+
+
+    async function upload() {
+        if (!cartridgeTitle || cartridgeTitle.length == 0 || !cartridge) {
+            alert("Title and cartridge field are mandatory!");
+            return;
+        }
+
+        setPageStatus(PageStatus.UploadCartridge);
+        let receipt = await addInput(wallet, cartridgeTitle, cartridge, setChunksCartridge,
+            (window as any).encodeAddCartridgeChunk, (window as any).encodeAddCartridge);
+
+        console.log(receipt);
+        try {
+            let game_id = await check_game_report(Number(receipt.events[0].args[1]._hex));
+
+            if (coverImage) {
+                setPageStatus(PageStatus.UploadEdit);
+                receipt = await addInput(wallet, game_id, coverImage, setChunksCoverImage,
+                    (window as any).encodeEditCartridgeChunk, (window as any).encodeEditCartridge);
+
+                await check_game_report(Number(receipt.events[0].args[1]._hex));
+            }
+
+            // if (description) {
+            //     send_description();
+            // }
+
+            // await sleep(300);
+            // router.push(`/cartridge/${game_id}`);
+            router.push("/");
+        } catch (error:any) {
+            console.log(error);
+        }
+
+        setPageStatus(PageStatus.Ready);
+    }
 
     function handle_cartridge_title(e:React.ChangeEvent<HTMLInputElement>) {
         setCartridgeTitle(e.target.value);
     }
 
-    function handle_cartridge_description(e:React.ChangeEvent<HTMLInputElement>) {
-        setCartridgeDescription(e.target.value);
-    }
+    // function handle_cartridge_description(e:React.ChangeEvent<HTMLInputElement>) {
+    //     setCartridgeDescription(e.target.value);
+    // }
 
     function handle_cartridge(e:React.ChangeEvent<HTMLInputElement>) {
         handle_file_input(e, setCartridge);
@@ -91,20 +211,20 @@ export default function UploadCartridge() {
                             <Form.Control placeholder="Default Title" onChange={handle_cartridge_title} />
                         </FloatingLabel>
 
-                        <FloatingLabel controlId="cartridgeDescription" label="Description" className="text-dark">
+                        {/* <FloatingLabel controlId="cartridgeDescription" label="Description (Optional)" className="text-dark">
                             <Form.Control as="textarea" placeholder="Default Description"
                                 style={{ height: '100px' }} onChange={handle_cartridge_description}
                             />
                             {additional_tx_warning()}
 
-                        </FloatingLabel>
+                        </FloatingLabel> */}
                     </Col>
                 </Row>
 
                 <Row>
                     <Col md="4">
                         <Form.Group controlId="formCartridgeCover">
-                            <Form.Label>Cartridge Cover Image</Form.Label>
+                            <Form.Label>Cartridge Cover Image (Optional)</Form.Label>
                             <Form.Control type="file" accept="image/*" onChange={handle_cover_image} />
                         </Form.Group>
                         {additional_tx_warning()}
@@ -120,9 +240,22 @@ export default function UploadCartridge() {
 
                 <Row>
                     <Col md={{ span: 3, offset: 6 }}>
-                        <Button variant="outline-light" className="float-end" onClick={() => {upload(cartridgeTitle, cartridgeDescription)}}>
-                            <span className="me-1"><GiLoad/></span>Upload Cartridge
-                        </Button>
+                        {
+                            pageStatus == PageStatus.Ready?
+                                <Button variant="outline-light" className="float-end" onClick={() => {upload()}}>
+                                    <span className="me-1"><GiLoad/></span>Upload Cartridge
+                                </Button>
+                            :
+                            <Stack gap={2} className="justify-content-center">
+                                <div>Sending Cartridge: {`${chunksCartridge[0]} of ${chunksCartridge[1]}`}</div>
+                                {
+                                    pageStatus == PageStatus.UploadEdit?
+                                        <div>{`Sending Cover Image: ${chunksCoverImage[0]} of ${chunksCoverImage[1]}`}</div>
+                                    :
+                                        <></>
+                                }
+                            </Stack>
+                        }
                     </Col>
                 </Row>
             </Form>
