@@ -1,10 +1,23 @@
+import { useState } from "react";
 import { Col, Container, Nav, Navbar, Row } from "react-bootstrap";
 import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa6";
 
 
 export default function Footer() {
+    const [hide, setHide] = useState("");
+
+    if (typeof window !== "undefined") {
+        window.onscroll = function(ev) {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+                setHide("visually-hidden");
+            } else {
+                setHide("");
+            }
+        };
+    }
+
     return (
-        <Container className="fixed-bottom">
+        <Container className={`fixed-bottom ${hide}`}>
             <Navbar bg="dark" className="mt-3 justify-content-center rounded text-light">
                 <Nav variant="underline">
                     <Row>
