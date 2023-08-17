@@ -9,10 +9,10 @@ import (
   "strings"
   // "strconv"
   "encoding/json"
-	"regexp"
+  "regexp"
   "os/exec"
   "math/big"
-	"crypto/sha256"
+  "crypto/sha256"
 
   "github.com/prototyp3-dev/go-rollups/rollups"
   "github.com/prototyp3-dev/go-rollups/handler/uri"
@@ -611,9 +611,9 @@ func ProcesReplay(replay *model.Replay, bin []byte) error {
     return fmt.Errorf("ProcesReplay: reading file: %s", err)
   }
 
-	scoreBytesHash := sha256.Sum256(scoreBytes)
-	var resultHash [32]byte
-	copy(resultHash[:],replay.ResultHash[:])
+  scoreBytesHash := sha256.Sum256(scoreBytes)
+  var resultHash [32]byte
+  copy(resultHash[:],replay.ResultHash[:])
   if scoreBytesHash != resultHash {
     return reportResultHashError()
   }

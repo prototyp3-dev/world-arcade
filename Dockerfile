@@ -20,7 +20,7 @@ RUN wget https://go.dev/dl/go${GOVERSION}.linux-$(dpkg --print-architecture).tar
 
 ARG TINYGOVERSION=0.28.1
 
-RUN wget https://github.com/tinygo-org/tinygo/releases/download/v0.28.1/tinygo_${TINYGOVERSION}_$(dpkg --print-architecture).deb && \
+RUN wget https://github.com/tinygo-org/tinygo/releases/download/v${TINYGOVERSION}/tinygo_${TINYGOVERSION}_$(dpkg --print-architecture).deb && \
     dpkg -i tinygo_${TINYGOVERSION}_$(dpkg --print-architecture).deb
 
 # RUN apt install libstdc++6:armhf # for arm64 arch
@@ -34,7 +34,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" && \
       # arm64) ARCH='arm64-macos';; \
       *) echo "unsupported architecture"; exit 0 ;; \
     esac && \
-    wget https://github.com/WebAssembly/binaryen/releases/download/version_113/binaryen-version_${BINARENVERSION}-${ARCH}.tar.gz && \
+    wget https://github.com/WebAssembly/binaryen/releases/download/version_${BINARENVERSION}/binaryen-version_${BINARENVERSION}-${ARCH}.tar.gz && \
     tar xvz binaryen-version_${BINARENVERSION}/bin/wasm-opt -f binaryen-version_${BINARENVERSION}-${ARCH}.tar.gz && \
     cp binaryen-version_${BINARENVERSION}/bin/wasm-opt /usr/local/bin/.
 

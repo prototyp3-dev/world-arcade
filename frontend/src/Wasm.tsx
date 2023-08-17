@@ -11,7 +11,6 @@
 // under the License.
 
 import React, { useState } from "react";
-import { useSetChain } from "@web3-onboard/react";
 import configFile from "./config.json";
 import { ethers } from "ethers";
 
@@ -24,16 +23,6 @@ interface IProps {
 }
 
 export const Wasm: React.FC<IProps> = ({onWasmLoaded}) => {
-    // const rollups = useRollups();
-    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-    // const hexToBytes = (hex:string) => {
-    //     let bytes = [];
-    //     for (let c = 0; c < hex.length; c += 2) {
-    //         bytes.push(parseInt(hex.substring(c, c+2), 16));
-    //     }
-    //     return new Uint8Array(bytes);
-    // }
-
     const go = new (window as any).Go();
     
     const inspectCall = async () => {
