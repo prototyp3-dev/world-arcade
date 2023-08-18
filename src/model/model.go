@@ -3,16 +3,16 @@ package model
 import (
   "fmt"
   "encoding/json"
-  "github.com/prototyp3-dev/go-rollups/rollups"
+  "encoding/base64"
 )
 
 type Cartridge struct {
-  Id string               `json:"id"`
-  Name string             `json:"name"`
-  UserAddress string      `json:"userAddress"`
-  CreatedAt uint64        `json:"lastEdited"`
-  Card []byte             `json:"card"`
-  DataChunks *DataChunks  `json:"dataChunks"`
+  Id string
+  Name string
+  UserAddress string
+  CreatedAt uint64
+  Card []byte
+  DataChunks *DataChunks
 }
 func (c Cartridge) MarshalJSON() ([]byte, error) {
   return json.Marshal(struct{
@@ -21,7 +21,7 @@ func (c Cartridge) MarshalJSON() ([]byte, error) {
     UserAddress string      `json:"userAddress"`
     CreatedAt uint64        `json:"createdAt"`
     Card string             `json:"card"`
-  }{c.Id,c.Name,c.UserAddress,c.CreatedAt,rollups.Bin2Hex(c.Card)})
+  }{c.Id,c.Name,c.UserAddress,c.CreatedAt,base64.StdEncoding.EncodeToString(c.Card)})
 }
 
 

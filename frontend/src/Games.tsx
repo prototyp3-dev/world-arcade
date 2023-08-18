@@ -10,8 +10,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-import React, { useEffect,useRef,useState } from "react";
-import { useSetChain } from "@web3-onboard/react";
+import React, { useEffect,useRef,useState,useCallback } from "react";
 import { ethers } from "ethers";
 import Select from "react-select";
 // import { useRollups } from "./useRollups";
@@ -64,27 +63,26 @@ export const Games: React.FC<IProps> = ({onChangeGameCartridge,reloadGameListTog
             });
     };
 
-    const doInspectGameList = () => {
-        inspectCall("cartridges",setGameListData);
-    }
-
-    const resetSelection = () => {
+    const resetSelection = useCallback(() => {
         setSelectedGame(null);
         setPreview(null);
         setCartridgeCard("");
         onChangeCard && onChangeCard(false);
-    }
+    },[onChangeCard]);
 
-    const setGameListData = (data: any) => {
-        const reports = JSON.parse(ethers.utils.toUtf8String(ethers.utils.hexlify(data)));
-        let options: Option[] = [];
-        for (let i = 0; i < reports.length; i++) {
-            const op: Option = {label: reports[i].name, value: reports[i].id, card: ethers.utils.arrayify(reports[i].card)};
-            options.push(op);            
+    const doInspectGameList = useCallback(() => {
+        const setGameListData = (data: any) => {
+            const reports = JSON.parse(ethers.utils.toUtf8String(ethers.utils.hexlify(data)));
+            let options: Option[] = [];
+            for (let i = 0; i < reports.length; i++) {
+                const op: Option = {label: reports[i].name, value: reports[i].id, card: Uint8Array.from(atob(reports[i].card), c => c.charCodeAt(0))};
+                options.push(op);            
+            }
+            setGameList(options);
+            resetSelection();
         }
-        setGameList(options);
-        resetSelection();
-    }
+            inspectCall("cartridges",setGameListData);
+    },[resetSelection])
 
     const doInspectGameCartridge = () => {
         setGetGameCartridgeMessage("Getting Game Cartridge");
@@ -193,13 +191,13 @@ export const Games: React.FC<IProps> = ({onChangeGameCartridge,reloadGameListTog
         if (prevGame.currGame !== currGame) {
             onChangeGameCartridge && onChangeGameCartridge(currGame);
         }
-    }, [currGame]);
+    }, [currGame,onChangeGameCartridge,prevGame]);
 
     useEffect(() => {
         if (prevRoloadToggle.reloadGameListToggle !== reloadGameListToggle){
             doInspectGameList();
         }
-    }, [reloadGameListToggle]);
+    }, [reloadGameListToggle,prevRoloadToggle,doInspectGameList]);
 
     return (
         <div>
@@ -226,7 +224,7 @@ export const Games: React.FC<IProps> = ({onChangeGameCartridge,reloadGameListTog
                     <Select options={gameList} value={selectedGame} onChange={(e:any) => setSelectedGameVars(e)} />
                 </div>
                 <div onClick={() => readCardFile()} style={{width:'200px',height:"200px", border: "1px solid rgba(0, 0, 0, 0.05)"}} >
-                    {preview ? <img src={preview} width={200} height={200} /> : ''}
+                    {preview ? <img src={preview} width={200} height={200} alt='Card' /> : ''}
                     <input type="file" value={cartridgeCard} ref={cardFileRef} onChange={(e) => handleCardFileInput(e.target.files && e.target.files[0])} style={{ display: 'none' }}/>
                 </div>
                 <button onClick={() => doInspectGameCartridge()} disabled={gameId === ""}>
