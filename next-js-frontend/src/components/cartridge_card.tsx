@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { Card, Image, Table } from "react-bootstrap";
 
-export interface Cartridge {
+export interface CartridgeInterface {
     id:string,
     name:string,
     userAddress:string,
@@ -9,7 +9,7 @@ export interface Cartridge {
     card: Uint8Array;
 }
 
-export default function CartridgeCard({cartridge, cover}: {cartridge: Cartridge, cover:string | null}) {
+export default function CartridgeCard({cartridge, cover}: {cartridge: CartridgeInterface, cover:string | null}) {
     const router = useRouter();
 
     let card_on_click = () => {
@@ -30,7 +30,7 @@ export default function CartridgeCard({cartridge, cover}: {cartridge: Cartridge,
 
 
                 {/* <Card.Text>
-                {auction.description}
+                {cartridge.description}
                 Description
                 </Card.Text> */}
 

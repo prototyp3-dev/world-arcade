@@ -5,7 +5,7 @@ import Footer from "@/components/footer";
 export default function About() {
   return (
     <Container>
-      <Header/>
+      <Header activeKey="/about"/>
       <Footer/>
     </Container>
   );

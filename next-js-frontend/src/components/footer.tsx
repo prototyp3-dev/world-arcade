@@ -32,7 +32,7 @@ export default function Footer() {
 
                             {/* Using an image for Cartesi because Font Awesome does not have an icon for it. */}
                             <Nav.Link className="ms-1 p-0" href="https://docs.cartesi.io/">
-                                <img src="./cartesi.jpg" width={16} className="me-1 align-baseline"></img>
+                                <img src="/cartesi.jpg" width={16} className="me-1 align-baseline"></img>
                                 Documentation
                             </Nav.Link>
                         </Col>

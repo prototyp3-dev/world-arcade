@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import CartridgeCard, { Cartridge } from "./cartridge_card";
+import CartridgeCard, { CartridgeInterface } from "./cartridge_card";
 import { Col, Row } from "react-bootstrap";
 
 
@@ -17,9 +17,9 @@ function game_cover(card:Uint8Array) {
     return cover;
 }
 
-function build_cards(cartridges:Cartridge[]) {
+function build_cards(cartridges:CartridgeInterface[]) {
     return (
-        cartridges.map((cartridge: Cartridge) => {
+        cartridges.map((cartridge: CartridgeInterface) => {
             return (
                 <Col key={cartridge?.id}>
                     <CartridgeCard cartridge={cartridge} cover={game_cover(cartridge.card)} ></CartridgeCard>
@@ -31,18 +31,18 @@ function build_cards(cartridges:Cartridge[]) {
 
 
 export default function CartridgesList() {
-    const [cartridges, setCartridges] = useState<Cartridge[]>();
+    const [cartridges, setCartridges] = useState<CartridgeInterface[]>();
 
     useEffect(() => {
         async function get_cartridge_list() {
             // GET /cartridges
             let url = `${process.env.NEXT_PUBLIC_INSPECT_URL}/cartridges`;
-        
+
             fetch(url, {method: "GET", mode: "cors"})
             .then((response) => {
                 response.json().then((inspect_res) => {
                     let payload = JSON.parse(ethers.utils.toUtf8String(inspect_res.reports[0].payload));
-                    let cartridges:Cartridge[] = [];
+                    let cartridges:CartridgeInterface[] = [];
 
                     for (let i = 0; i < payload.length; i++) {
                         payload[i].card = ethers.utils.arrayify(payload[i].card);
@@ -68,7 +68,7 @@ export default function CartridgesList() {
         );
     }
 
-    
+
     return (
         <Row md={3}>
             {build_cards(cartridges)}

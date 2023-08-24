@@ -5,7 +5,7 @@ import Footer from "@/components/footer";
 export default function HowTo() {
   return (
     <Container>
-      <Header/>
+      <Header activeKey="/how_to"/>
       <Footer/>
     </Container>
   );

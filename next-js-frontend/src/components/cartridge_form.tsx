@@ -91,7 +91,7 @@ async function check_upload_report(input_index:number, must_have_report = true) 
     let url = `${process.env.NEXT_PUBLIC_GRAPHQL_URL}`;
     let query = `{"query":"query reportsByInput {input(index: ${input_index}) {reports {edges {node {index input {index} payload}}}}}"}`;
 
-    sleep(1000); // sleep for 1 sec before start polling
+    await sleep(1000); // sleep for 1 sec before start polling
     while (true) {
         let response = await fetch(url, {method: 'POST', mode: 'cors', headers: {"Content-Type": "application/json"}, body: query});
         if (!response.ok) {
@@ -102,7 +102,7 @@ async function check_upload_report(input_index:number, must_have_report = true) 
         console.log("Report:", report);
 
         if (!report.data) {
-            await sleep(400); // "sleep" for 200 ms
+            await sleep(500); // "sleep" for 500 ms
         } else if (report.data.input.reports.edges.length == 0) {
             if (must_have_report) {
                 throw Error("Failed to locate report.");
@@ -200,7 +200,7 @@ export default function CartridgeForm({wallet}: {wallet:WalletState|null}) {
         return (
             <Row>
                 <Col md={{ span: 5, offset: 4 }}>
-                    <div className="bg-dark text-center text-light py-3">
+                    <div className="bg-dark text-center text-light py-3 rounded">
                         <h1>Uploading your Cartridge</h1>
                         <Stack gap={1} className="mb-2">
                             <div className="d-flex justify-content-center">

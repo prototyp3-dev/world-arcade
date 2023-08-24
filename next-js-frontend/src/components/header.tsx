@@ -13,7 +13,7 @@ export default function Header({activeKey}: {activeKey:string}) {
                     <img
                         className="header-image-left"
                         alt="Cartesi Arcade Image"
-                        src="./controlls.png"
+                        src="/controlls.png"
                         width="60"
                         height="60"
                     />
@@ -21,7 +21,7 @@ export default function Header({activeKey}: {activeKey:string}) {
                     <img
                         className="header-image-right"
                         alt="Cartesi Arcade Image"
-                        src="./controlls.png"
+                        src="/controlls.png"
                         width="60"
                         height="60"
                     />

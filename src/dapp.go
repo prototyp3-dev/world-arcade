@@ -37,7 +37,7 @@ var maxReportBytes int
 
 //
 // Reports
-// 
+//
 
 func reportSuccess(cartridgeId string) error {
 
@@ -149,7 +149,7 @@ func reportUnauthorizedUser() error {
 
 //
 // Cartridge Inspect
-// 
+//
 
 func GetCartridgeList(payloadMap map[string]interface{}) error {
   infolog.Println("GetCartridgeList: payload:",payloadMap)
@@ -164,11 +164,38 @@ func GetCartridgeList(payloadMap map[string]interface{}) error {
   if err != nil {
     return err
   }
-  
+
   report := rollups.Report{rollups.Str2Hex(string(listJson))}
   _, err = rollups.SendReport(&report)
   if err != nil {
     return fmt.Errorf("GetCartridge: error making http request: %s", err)
+  }
+
+  return nil
+}
+
+func GetCartridgeInfo(payloadMap map[string]interface{}) error {
+  infolog.Println("GetCartridgeInfo: payload:",payloadMap)
+
+  cartridgeId, ok1 := payloadMap["id"].(string)
+
+  if !ok1 {
+    return fmt.Errorf("GetCartridgeInfo: parameters error")
+  }
+
+  if cartridges[cartridgeId] == nil {
+    return fmt.Errorf("GetCartridgeInfo: game not found")
+  }
+
+  cartridgeInfo, err := json.Marshal(cartridges[cartridgeId])
+  if err != nil {
+    return err
+  }
+
+  report := rollups.Report{rollups.Str2Hex(string(cartridgeInfo))}
+  _, err = rollups.SendReport(&report)
+  if err != nil {
+    return fmt.Errorf("GetCartridgeInfo: error making http request: %s", err)
   }
 
   return nil
@@ -191,7 +218,7 @@ func GetCartridge(payloadMap map[string]interface{}) error {
   if err != nil {
     return fmt.Errorf("GetCartridge: error opening file %s: %s", cartridgesPath + string(cartridgeId), err)
   }
-  
+
   sentBytes := 0
   for sentBytes < len(fileBytes) {
     topBytes := sentBytes + maxReportBytes
@@ -226,7 +253,7 @@ func GetUploadStatus(payloadMap map[string]interface{}) error {
   if err != nil {
     return err
   }
-  
+
   report := rollups.Report{rollups.Str2Hex(string(cartridgeJson))}
   _, err = rollups.SendReport(&report)
   if err != nil {
@@ -239,7 +266,7 @@ func GetUploadStatus(payloadMap map[string]interface{}) error {
 
 //
 // Wasm Inspect
-// 
+//
 
 func GetWasm(payloadMap map[string]interface{}) error {
   infolog.Println("Got wasm request")
@@ -261,7 +288,7 @@ func GetWasm(payloadMap map[string]interface{}) error {
       if err != nil {
         return fmt.Errorf("GetWasm: error opening file %s: %s", file.Name(), err)
       }
-      
+
       sentBytes := 0
       for sentBytes < len(fileBytes) {
         topBytes := sentBytes + maxReportBytes
@@ -281,7 +308,7 @@ func GetWasm(payloadMap map[string]interface{}) error {
       // if err != nil {
       //   return fmt.Errorf("ShowClaim: error making http request: %s", err)
       // }
-      // infolog.Println("Received report status", strconv.Itoa(res.StatusCode))  
+      // infolog.Println("Received report status", strconv.Itoa(res.StatusCode))
     }
   }
   return nil
@@ -290,7 +317,7 @@ func GetWasm(payloadMap map[string]interface{}) error {
 
 //
 // Cartridge
-// 
+//
 
 func HandleCartridgeSubmit(metadata *rollups.Metadata, payloadMap map[string]interface{}) error {
   // infolog.Println("HandleCartridgeSubmit: payload:",payloadMap)
@@ -387,7 +414,7 @@ func SaveCartridgeCartridge(cartridge *model.Cartridge, bin []byte) error {
 
 //
 // Cartridge Card (extra params)
-// 
+//
 
 func HandleEditCartridgeCard(metadata *rollups.Metadata, payloadMap map[string]interface{}) error {
   // infolog.Println("HandleCartridgeSubmit: payload:",payloadMap)
@@ -438,7 +465,7 @@ func HandleEditCartridgeCardChunk(metadata *rollups.Metadata, payloadMap map[str
     return reportCartridgeNotFound()
   }
   cartridge := cartridges[cartridgeId]
-  
+
   err := processor.UpdateDataChunks(cartridge.DataChunks,bin)
   if err != nil {
     return fmt.Errorf("HandleEditCartridgeCardChunk: Error updating data chunks: %s",err)
@@ -465,7 +492,7 @@ func EditCartridgeCard(cartridge *model.Cartridge, bin []byte) error {
 
 //
 // Remove
-// 
+//
 
 func HandleRemove(metadata *rollups.Metadata, payloadMap map[string]interface{}) error {
   infolog.Println("HandleRemove: payload:",payloadMap)
@@ -497,7 +524,7 @@ func HandleRemove(metadata *rollups.Metadata, payloadMap map[string]interface{})
 
 //
 // Replay
-// 
+//
 
 func HandleReplay(metadata *rollups.Metadata, payloadMap map[string]interface{}) error {
   infolog.Println("HandleReplay: payload:",payloadMap)
@@ -573,7 +600,7 @@ func HandleReplayChunk(metadata *rollups.Metadata, payloadMap map[string]interfa
     }
     replay.DataChunks = nil
     delete(replayUploads, replayId)
-    
+
     return ProcesReplay(replay, composed)
   }
   return nil
@@ -605,7 +632,7 @@ func ProcesReplay(replay *model.Replay, bin []byte) error {
     infolog.Println(string(out))
     return reportExecutionError(err)
   }
-  
+
   scoreBytes, err := ioutil.ReadFile(scorefilename)
   if err != nil {
     return fmt.Errorf("ProcesReplay: reading file: %s", err)
@@ -659,7 +686,7 @@ func main() {
   cartridges = make(map[string]*model.Cartridge)
   // cartridges["e7e2a65711cc38c264252b7224066b37a1193233712527a3cdec6bb97ee11cd1"] = &model.Cartridge{Name: "test", Id: "e7e2a65711cc38c264252b7224066b37a1193233712527a3cdec6bb97ee11cd1"}
   cartridgeUploads = make(map[string]*model.Cartridge)
-  
+
   scorefilename = "cartridges/score"
   cartridgesPath = "cartridges/"
   newpath := filepath.Join(".", "cartridges")
@@ -683,11 +710,12 @@ func main() {
   handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","verifyReplayChunk",[]string{"string id","bytes resultHash","string args","bytes card","bytes bin"}), HandleReplayChunk)
 
   handler.HandleDefault(HandleWrongWay)
-  
+
   uriHandler := urihandler.AddUriHandler(handler.Handler)
   uriHandler.HandleInspectRoute("wasm", GetWasm)
   uriHandler.HandleInspectRoute("cartridges", GetCartridgeList)
-  uriHandler.HandleInspectRoute("cartridges/:id", GetCartridge) // id is string hash of cartridge
+  uriHandler.HandleInspectRoute("cartridges/:id", GetCartridgeInfo)         // id is string hash of cartridge
+  uriHandler.HandleInspectRoute("cartridges/:id/cartridge", GetCartridge)   // id is string hash of cartridge
   uriHandler.HandleInspectRoute("cartridges/upload/:name", GetUploadStatus) // chunk upload status
 
   err = handler.Run()
