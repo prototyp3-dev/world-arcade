@@ -9,7 +9,7 @@ export interface CartridgeInterface {
     card: Uint8Array;
 }
 
-export default function CartridgeCard({cartridge, cover}: {cartridge: CartridgeInterface, cover:string | null}) {
+export default function CartridgeCard({cartridge}: {cartridge: CartridgeInterface}) {
     const router = useRouter();
 
     let card_on_click = () => {
@@ -25,7 +25,7 @@ export default function CartridgeCard({cartridge, cover}: {cartridge: CartridgeI
                 <Card.Title>{cartridge.name}</Card.Title>
 
                 <div className="text-center border border-dark rounded">
-                    <Image src={cover? cover:"./cartesi.jpg"} height={150}/>
+                    <Image src={cartridge.card? `data:image/png;base64,${cartridge.card}`:"/cartesi.jpg"} height={150}/>
                 </div>
 
 

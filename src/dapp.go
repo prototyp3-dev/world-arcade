@@ -9,10 +9,10 @@ import (
   "strings"
   // "strconv"
   "encoding/json"
-	"regexp"
+  "regexp"
   "os/exec"
   "math/big"
-	"crypto/sha256"
+  "crypto/sha256"
 
   "github.com/prototyp3-dev/go-rollups/rollups"
   "github.com/prototyp3-dev/go-rollups/handler/uri"
@@ -165,10 +165,18 @@ func GetCartridgeList(payloadMap map[string]interface{}) error {
     return err
   }
 
-  report := rollups.Report{rollups.Str2Hex(string(listJson))}
-  _, err = rollups.SendReport(&report)
-  if err != nil {
-    return fmt.Errorf("GetCartridge: error making http request: %s", err)
+  sentBytes := 0
+  for sentBytes < len(listJson) {
+    topBytes := sentBytes + maxReportBytes
+    if topBytes > len(listJson) {
+      topBytes = len(listJson)
+    }
+    report := rollups.Report{rollups.Bin2Hex(listJson[sentBytes:topBytes])}
+    _, err = rollups.SendReport(&report)
+    if err != nil {
+      return fmt.Errorf("GetCartridgeList: error making http request: %s", err)
+    }
+    sentBytes = topBytes
   }
 
   return nil
@@ -298,7 +306,7 @@ func GetWasm(payloadMap map[string]interface{}) error {
         report := rollups.Report{rollups.Bin2Hex(fileBytes[sentBytes:topBytes])}
         _, err := rollups.SendReport(&report)
         if err != nil {
-          return fmt.Errorf("GetCartridge: error making http request: %s", err)
+          return fmt.Errorf("GetWasm: error making http request: %s", err)
         }
         sentBytes = topBytes
       }
@@ -385,7 +393,7 @@ func HandleCartridgeChunkSubmit(metadata *rollups.Metadata, payloadMap map[strin
 
 func SaveCartridgeCartridge(cartridge *model.Cartridge, bin []byte) error {
   cartridge.Id = processor.GenerateCartridgeId(bin)
-  infolog.Println("SaveCartridgeCartridge: Saving",cartridge,"with",len(bin),"bytes")
+  infolog.Println("SaveCartridgeCartridge: Saving",cartridge.Name,"with",len(bin),"bytes")
 
   if cartridges[cartridge.Id] != nil {
     return fmt.Errorf("SaveCartridgeCartridge: Cartridge already installed")
@@ -418,6 +426,7 @@ func SaveCartridgeCartridge(cartridge *model.Cartridge, bin []byte) error {
 
 func HandleEditCartridgeCard(metadata *rollups.Metadata, payloadMap map[string]interface{}) error {
   // infolog.Println("HandleCartridgeSubmit: payload:",payloadMap)
+  infolog.Println("HandleCartridgeSubmit: payload length:",len(payloadMap))
 
   cartridgeId, ok1 := payloadMap["id"].(string)
   bin, ok2 := payloadMap["bin"].([]byte)
@@ -485,7 +494,7 @@ func HandleEditCartridgeCardChunk(metadata *rollups.Metadata, payloadMap map[str
 
 func EditCartridgeCard(cartridge *model.Cartridge, bin []byte) error {
   cartridge.Card = bin
-  infolog.Println("EditCartridgeCard: Saving",cartridge)
+  infolog.Println("EditCartridgeCard: Saving",cartridge.Name,"card with",len(bin),"bytes")
   return reportSuccess(cartridge.Id)
 }
 
@@ -638,9 +647,9 @@ func ProcesReplay(replay *model.Replay, bin []byte) error {
     return fmt.Errorf("ProcesReplay: reading file: %s", err)
   }
 
-	scoreBytesHash := sha256.Sum256(scoreBytes)
-	var resultHash [32]byte
-	copy(resultHash[:],replay.ResultHash[:])
+  scoreBytesHash := sha256.Sum256(scoreBytes)
+  var resultHash [32]byte
+  copy(resultHash[:],replay.ResultHash[:])
   if scoreBytesHash != resultHash {
     return reportResultHashError()
   }

@@ -16,8 +16,6 @@ enum PageStatus {
     Finish
 }
 
-const maxSizeToSend = 409600;
-
 function sleep(ms:number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -61,9 +59,16 @@ async function addInput(wallet:WalletState|null, id:string, data:Uint8Array, set
     }
 
     if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
-        console.log("Input BOX addr not defined");
+        console.log("Input BOX addr not defined.");
         return;
     }
+
+    if (!process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND) {
+        console.log("MAX SIZE TO SEND not defined.");
+        return;
+    }
+
+    const maxSizeToSend = parseInt(process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND);
 
     const signer = new ethers.providers.Web3Provider(wallet.provider, 'any').getSigner();
     const inputContract = new ethers.Contract(process.env.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
@@ -185,14 +190,12 @@ export default function CartridgeForm({wallet}: {wallet:WalletState|null}) {
             //     send_description();
             // }
 
-            // await sleep(300);
-            // router.push(`/cartridge/${game_id}`);
-            router.push("/");
+            await sleep(300);
+            router.push(`/cartridge/${game_id}`);
         } catch (error:any) {
             console.log(error);
+            setPageStatus(PageStatus.Ready);
         }
-
-        setPageStatus(PageStatus.Ready);
     }
 
     if (pageStatus != PageStatus.Ready) {

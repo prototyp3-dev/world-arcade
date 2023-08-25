@@ -49,8 +49,6 @@ func TrimIntFunc(r rune) bool {
 	return !unicode.IsNumber(r)
 }
 
-type mytyp string
-
 func main() {
     args := os.Args
 

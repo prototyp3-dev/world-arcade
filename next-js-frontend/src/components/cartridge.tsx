@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { CartridgeInterface } from "./cartridge_card";
-import { ethers } from "ethers";
 import { Button, Col, Container, Modal, Row, Spinner, Stack } from "react-bootstrap";
 import Image from 'react-bootstrap/Image';
 import { RiSendPlaneFill, RiDownload2Line, RiEdit2Line } from "react-icons/ri";
 import { FaRankingStar } from "react-icons/fa6";
 import { GiPodiumWinner, GiPodiumSecond, GiPodiumThird } from "react-icons/gi";
+import { useConnectWallet } from "@web3-onboard/react";
+import LogForm from "./log_form";
 
 
 interface Score {
@@ -53,8 +54,8 @@ async function get_ranking(game_id:string) {
 }
 
 export default function Cartridge({game}:{game:CartridgeInterface|null}) {
+    const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
     const [show, setShow] = useState(false);
-    const [coverImagePreview, setCoverImagePreview] = useState<any|null>(null);
     const [ranking, setRanking] = useState<Array<Score>|null>(null);
     const [cartridge, setCartridge] = useState("");
 
@@ -66,23 +67,11 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
         const data = await get_cartridge(game.id);
         setCartridge(data);
-        console.log("Cartridge Downloaded!")
+        console.log("Cartridge Downloaded!");
     }
 
     useEffect(() => {
         if (!game) return;
-
-        if (!coverImagePreview) {
-            // Set the cover image preview to be exhibit in the form
-            const date = new Date();
-            const blobFile = new Blob([game.card||new Uint8Array()],{type:'image/png'})
-            const file = new File([blobFile], `${date.getMilliseconds()}`);
-
-            const urlObj = URL.createObjectURL(file);
-
-            console.log(urlObj);
-            setCoverImagePreview(urlObj);
-        }
 
         get_ranking(game.id).then(
             (ranking) => {
@@ -103,81 +92,84 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
     return (
         <Container className="bg-dark text-light rounded">
-            <div className="d-flex align-items-baseline">
-                <h2>{game.name}</h2>
-
-                <a className={link_classes} role="button" onClick={download_cartridge}
-                  title="Download the cartridge to play on your machine">
-                    <span className="me-1"><RiDownload2Line/></span>Download Cartridge
-                </a>
-
-                <a className={link_classes}
-                  title="Submit the log of a match/run" role="button" onClick={handleShow}>
-                    <span className="me-1"><RiSendPlaneFill/></span>Submit Log
-                </a>
-
-                <a className={`ms-auto ${link_classes}`}
-                  title="Edit the game" role="button" onClick={handleShow}>
-                    <span className="me-1"><RiEdit2Line/></span>Edit
-                </a>
-            </div>
-
-            <Row>
+            <Row className="p-2">
                 <Col md="4">
-                    <div className={coverImagePreview? "text-center": "border border-light rounded"} style={coverImagePreview? {}:{height: 250}}>
-                        <Image src={coverImagePreview? coverImagePreview:""} fluid
-                            className={coverImagePreview? "border border-light rounded":""}
-                        />
+                    <h2>{game.name}</h2>
+                    <div className="text-center">
+                        <Image src={game?.card? `data:image/png;base64,${game.card}`:"/cartesi.jpg"} height={150}/>
                     </div>
                 </Col>
-                <Col className="text-center">
-                    <h4><span className="me-1"><FaRankingStar/></span>Ranking</h4>
-                    {
-                        ranking !== null?
-                            <Stack gap={1}>
-                                <div>
-                                    <span className="me-1"><GiPodiumWinner/></span>
-                                    <span className="font-monospace">
-                                        {ranking.length >= 1? `${ranking[0].user} - ${ranking[0].score}`: "Be the first"}
-                                    </span>
-                                </div>
 
-                                <div>
-                                    <span className="me-1"><GiPodiumSecond/></span>
-                                    <span className="font-monospace">
-                                        {ranking.length >= 2? `${ranking[1].user} - ${ranking[1].score}`: "Get to the podium"}
-                                    </span>
-                                </div>
+                <Col>
+                    <div className="d-flex">
+                        <a className={link_classes} role="button" onClick={download_cartridge}
+                        title="Download the cartridge to play on your machine">
+                            <span className="me-1"><RiDownload2Line/></span>Download Cartridge
+                        </a>
 
-                                <div>
-                                    <span className="me-1"><GiPodiumThird/></span>
-                                    <span className="font-monospace">
-                                        {ranking.length >= 3? `${ranking[2].user} - ${ranking[2].score}`: "Get to the podium"}
-                                    </span>
-                                </div>
-                            </Stack>
-                        :
-                        <Spinner className="my-2" animation="border" variant="light">
-                            <span className="visually-hidden">Loading...</span>
-                        </Spinner>
-                    }
+                        <a className={link_classes}
+                        title="Submit the log of a match/run" role="button" onClick={handleShow}>
+                            <span className="me-1"><RiSendPlaneFill/></span>Submit Log
+                        </a>
+
+                        {
+                            wallet && wallet.accounts[0].address == game.userAddress
+                            ?
+                                <a className={`ms-auto ${link_classes}`}
+                                title="Edit game info" role="button" onClick={() => {}}>
+                                    <span className="me-1"><RiEdit2Line/></span>Edit
+                                </a>
+                            :
+                                <></>
+                        }
+                    </div>
+
+                    <div  className="text-center">
+                        <h4><span className="me-1"><FaRankingStar/></span>Ranking</h4>
+                        {
+                            ranking !== null?
+                                <Stack gap={1}>
+                                    <div>
+                                        <span className="me-1"><GiPodiumWinner/></span>
+                                        <span className="font-monospace">
+                                            {ranking.length >= 1? `${ranking[0].user} - ${ranking[0].score}`: "Be the first"}
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <span className="me-1"><GiPodiumSecond/></span>
+                                        <span className="font-monospace">
+                                            {ranking.length >= 2? `${ranking[1].user} - ${ranking[1].score}`: "Get to the podium"}
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <span className="me-1"><GiPodiumThird/></span>
+                                        <span className="font-monospace">
+                                            {ranking.length >= 3? `${ranking[2].user} - ${ranking[2].score}`: "Get to the podium"}
+                                        </span>
+                                    </div>
+                                </Stack>
+                            :
+                            <Spinner className="my-2" animation="border" variant="light">
+                                <span className="visually-hidden">Loading...</span>
+                            </Spinner>
+                        }
+                    </div>
                 </Col>
             </Row>
 
 
-            <Modal show={show} onHide={handleClose}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Modal title</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    Select a log to submit
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleClose}>
-                        Close
-                    </Button>
-                    <Button variant="primary">Understood</Button>
-                </Modal.Footer>
+            <Modal className="py-3 px-5" show={show} animation={false} onHide={handleClose}>
+                <div className="bg-dark text-light rounded border border-light">
+                    <Modal.Header closeButton closeVariant="white">
+                        <Modal.Title>Submit a gameplay for this game</Modal.Title>
+                    </Modal.Header>
+
+                    <Modal.Body >
+                        <LogForm game_id={game.id}></LogForm>
+                    </Modal.Body>
+                </div>
             </Modal>
         </Container>
     );

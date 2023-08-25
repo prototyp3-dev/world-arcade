@@ -4,25 +4,12 @@ import CartridgeCard, { CartridgeInterface } from "./cartridge_card";
 import { Col, Row } from "react-bootstrap";
 
 
-function game_cover(card:Uint8Array) {
-    if (!(card && card.length > 0)) {
-        return null;
-    }
-
-    const date = new Date();
-    let blobFile = new Blob([card||new Uint8Array()],{type:'image/png'})
-    var file = new File([blobFile], `${date.getMilliseconds()}`);
-    const cover = URL.createObjectURL(file);
-
-    return cover;
-}
-
 function build_cards(cartridges:CartridgeInterface[]) {
     return (
         cartridges.map((cartridge: CartridgeInterface) => {
             return (
                 <Col key={cartridge?.id}>
-                    <CartridgeCard cartridge={cartridge} cover={game_cover(cartridge.card)} ></CartridgeCard>
+                    <CartridgeCard cartridge={cartridge} ></CartridgeCard>
                 </Col>
             )
         })
@@ -45,7 +32,6 @@ export default function CartridgesList() {
                     let cartridges:CartridgeInterface[] = [];
 
                     for (let i = 0; i < payload.length; i++) {
-                        payload[i].card = ethers.utils.arrayify(payload[i].card);
                         cartridges.push(payload[i]);
                     }
 
