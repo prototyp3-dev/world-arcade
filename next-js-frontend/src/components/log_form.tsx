@@ -22,7 +22,7 @@ enum FormStatus {
     Sending
 }
 
-export default function LogForm({game_id}:{game_id:string}) {
+export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Function}) {
     const utf8EncodeText = new TextEncoder();
     const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
     const [ gameplay, setGameplay ] = useState<GameLog>({args:"", card:utf8EncodeText.encode("")} as GameLog);
@@ -49,6 +49,7 @@ export default function LogForm({game_id}:{game_id:string}) {
         const signer = new ethers.providers.Web3Provider(wallet.provider, 'any').getSigner();
         const inputContract = new ethers.Contract(process.env.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
         let input;
+        let receipt;
 
         setFormStatus(FormStatus.Sending);
         try {
@@ -66,7 +67,7 @@ export default function LogForm({game_id}:{game_id:string}) {
                         chunkToSend
                     ));
 
-                    await input.wait();
+                    receipt = await input.wait();
                 }
             } else {
                 input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplay(
@@ -77,10 +78,11 @@ export default function LogForm({game_id}:{game_id:string}) {
                     ethers.utils.hexlify(gameplay.log)
                 ));
 
-                await input.wait();
+                receipt = await input.wait();
             }
 
             console.log("Log Sent!");
+            log_sent(Number(receipt.events[0].args[1]._hex));
         } catch (error) {
             setFormStatus(FormStatus.Ready);
             console.log(error);
@@ -143,9 +145,13 @@ export default function LogForm({game_id}:{game_id:string}) {
     }
 
     if (formStatus != FormStatus.Ready) {
-        <Spinner className="my-2" animation="border" variant="light">
-            <span className="visually-hidden">Loading...</span>
-        </Spinner>
+        return (
+            <div className="text-center">
+                <Spinner className="my-2" animation="border" variant="light">
+                    <span className="visually-hidden">Loading...</span>
+                </Spinner>
+            </div>
+        );
     }
 
     return (

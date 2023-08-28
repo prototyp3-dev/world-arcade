@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CartridgeInterface } from "./cartridge_card";
-import { Button, Col, Container, Modal, Row, Spinner, Stack } from "react-bootstrap";
+import { Col, Container, Modal, Row, Spinner, Stack } from "react-bootstrap";
 import Image from 'react-bootstrap/Image';
 import { RiSendPlaneFill, RiDownload2Line, RiEdit2Line } from "react-icons/ri";
 import { FaRankingStar } from "react-icons/fa6";
@@ -11,13 +11,29 @@ import LogForm from "./log_form";
 
 interface Score {
     user: string,
-    score: string
+    score: number
 }
+
+// game, player, timestamp, finished, "", score, diff-score
+type ScoreNotice = [string, string, number, boolean, string, number, number]
 
 const link_classes = "mx-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
 
 function sleep(ms:number) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function insertSorted(ranking:Array<Score>, score:Score) {
+    let i = 0;
+    while (i < ranking.length && ranking[i].score > score.score) i++;
+    ranking.splice(i, 0, score);
+}
+
+function formatScore(higherScore:number, scoreToFormat:number) {
+    const higherScoreStr = higherScore.toString();
+    const scoreToFormatStr = scoreToFormat.toString();
+
+    return '0'.repeat(higherScoreStr.length-scoreToFormatStr.length) + scoreToFormatStr;
 }
 
 async function get_cartridge(game_id:string) {
@@ -41,16 +57,57 @@ async function get_cartridge(game_id:string) {
 }
 
 async function get_ranking(game_id:string) {
-    // TODO
-    await sleep(2000);
-    const score0 = "100"
-    const score1 = "80"
-    const score2 = "75"
-    return [
-        {user: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", score: score0},
-        {user: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", score: `${'0'.repeat(score0.length-score1.length) + score1}`},
-        {user: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", score: `${'0'.repeat(score0.length-score2.length) + score2}`}
-    ];
+    let url = `${process.env.NEXT_PUBLIC_GRAPHQL_URL}`;
+    let query = `{ "query": "query notices {notices {edges {node {payload}}}}" }`
+
+    let response = await fetch(url, {method: 'POST', mode: 'cors', headers: {"Content-Type": "application/json"}, body: query});
+    if (!response.ok) {
+        throw Error(`Failed to retrieve info from GRAPHQL (${process.env.NEXT_PUBLIC_GRAPHQL_URL}).`);
+    }
+
+    let notices = await response.json();
+    let ranking:Array<Score> = [];
+
+    if (!notices.data || notices.data.notices.edges.length == 0) {
+        return ranking;
+    }
+
+    for (let i = 0; i < notices.data.notices.edges.length; i++) {
+        const scoreNotice:ScoreNotice = (window as any).decodeScoreNotice(notices.data.notices.edges[i].node.payload).split(",");
+
+        if (scoreNotice[3] && scoreNotice[0] == game_id) {
+            insertSorted(ranking, {"user": scoreNotice[1], "score": scoreNotice[5]});
+        }
+    }
+
+    return ranking;
+}
+
+async function get_score(game_id:string, input_index:number) {
+    let url = `${process.env.NEXT_PUBLIC_GRAPHQL_URL}`;
+    let query = `{ "query": "query noticesByInput {input(index: ${input_index}) {notices {edges {node {payload}}}}}" }`
+
+    await sleep(1000); // sleep for 1 sec before start polling
+    while (true) {
+        let response = await fetch(url, {method: 'POST', mode: 'cors', headers: {"Content-Type": "application/json"}, body: query});
+        if (!response.ok) {
+            throw Error(`Failed to retrieve info from GRAPHQL (${process.env.NEXT_PUBLIC_GRAPHQL_URL}).`);
+        }
+
+        let notice = await response.json();
+        if (!notice.data || notice.data.input.notices.edges.length == 0) {
+            await sleep(500);
+        } else {
+            const scoreNotice:ScoreNotice = (window as any).decodeScoreNotice(notice.data.input.notices.edges[0].node.payload).split(",");
+            let score:Score|null = null;
+
+            if (scoreNotice[3] && scoreNotice[0] == game_id) {
+                score = {"user": scoreNotice[1], "score": scoreNotice[5]};
+            }
+
+            return score;
+        }
+    }
 }
 
 export default function Cartridge({game}:{game:CartridgeInterface|null}) {
@@ -68,6 +125,23 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
         const data = await get_cartridge(game.id);
         setCartridge(data);
         console.log("Cartridge Downloaded!");
+    }
+
+    async function log_sent(input_index:number) {
+        if (!game || !ranking) return;
+
+        const score = await get_score(game.id, input_index);
+
+        if (!score) {
+            alert("Your gameplay log is not valid.");
+            return;
+        }
+
+        insertSorted(ranking, score);
+
+        setRanking(ranking);
+
+        handleClose();
     }
 
     useEffect(() => {
@@ -127,33 +201,53 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                     <div  className="text-center">
                         <h4><span className="me-1"><FaRankingStar/></span>Ranking</h4>
                         {
-                            ranking !== null?
+                            ranking !== null
+                            ?
                                 <Stack gap={1}>
                                     <div>
                                         <span className="me-1"><GiPodiumWinner/></span>
                                         <span className="font-monospace">
-                                            {ranking.length >= 1? `${ranking[0].user} - ${ranking[0].score}`: "Be the first"}
+                                            {
+                                                ranking.length >= 1
+                                                ?
+                                                    `${ranking[0].user} - ${ranking[0].score}`
+                                                :
+                                                    "Be the first to play!"
+                                            }
                                         </span>
                                     </div>
 
-                                    <div>
-                                        <span className="me-1"><GiPodiumSecond/></span>
-                                        <span className="font-monospace">
-                                            {ranking.length >= 2? `${ranking[1].user} - ${ranking[1].score}`: "Get to the podium"}
-                                        </span>
-                                    </div>
+                                    {
+                                        ranking.length >= 2
+                                        ?
+                                            <div>
+                                                <span className="me-1"><GiPodiumSecond/></span>
+                                                <span className="font-monospace">
+                                                    {`${ranking[1].user} - ${formatScore(ranking[0].score, ranking[1].score)}`}
+                                                </span>
+                                            </div>
+                                        :
+                                            <></>
+                                    }
 
-                                    <div>
-                                        <span className="me-1"><GiPodiumThird/></span>
-                                        <span className="font-monospace">
-                                            {ranking.length >= 3? `${ranking[2].user} - ${ranking[2].score}`: "Get to the podium"}
-                                        </span>
-                                    </div>
+                                    {
+                                        ranking.length >= 3
+                                        ?
+                                            <div>
+                                                <span className="me-1"><GiPodiumThird/></span>
+                                                <span className="font-monospace">
+                                                    {`${ranking[2].user} - ${formatScore(ranking[0].score, ranking[2].score)}`}
+                                                </span>
+                                            </div>
+                                        :
+                                            <></>
+                                    }
+
                                 </Stack>
                             :
-                            <Spinner className="my-2" animation="border" variant="light">
-                                <span className="visually-hidden">Loading...</span>
-                            </Spinner>
+                                <Spinner className="my-2" animation="border" variant="light">
+                                    <span className="visually-hidden">Loading...</span>
+                                </Spinner>
                         }
                     </div>
                 </Col>
@@ -167,7 +261,7 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                     </Modal.Header>
 
                     <Modal.Body >
-                        <LogForm game_id={game.id}></LogForm>
+                        <LogForm game_id={game.id} log_sent={log_sent}></LogForm>
                     </Modal.Body>
                 </div>
             </Modal>

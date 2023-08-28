@@ -106,13 +106,13 @@ async function check_upload_report(input_index:number, must_have_report = true) 
         let report = await response.json();
         console.log("Report:", report);
 
-        if (!report.data) {
+        if (!report.data || report.data.input.reports.edges.length == 0) {
             await sleep(500); // "sleep" for 500 ms
-        } else if (report.data.input.reports.edges.length == 0) {
-            if (must_have_report) {
-                throw Error("Failed to locate report.");
-            }
-            return null;
+        // } else if (report.data.input.reports.edges.length == 0) {
+        //     if (must_have_report) {
+        //         throw Error("Failed to locate report.");
+        //     }
+        //     return null;
         } else {
             const payload_utf8 = ethers.utils.toUtf8String(report.data.input.reports.edges[0].node.payload);
             const payload_json = JSON.parse(payload_utf8);
