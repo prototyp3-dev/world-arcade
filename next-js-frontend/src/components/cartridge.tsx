@@ -6,6 +6,9 @@ import { RiSendPlaneFill, RiDownload2Line, RiEdit2Line } from "react-icons/ri";
 import { FaRankingStar } from "react-icons/fa6";
 import { GiPodiumWinner, GiPodiumSecond, GiPodiumThird } from "react-icons/gi";
 import { useConnectWallet } from "@web3-onboard/react";
+import { getNotices, getNotice } from "@/graphql/notices";
+import { getReport } from "@/graphql/reports";
+import { ethers } from "ethers";
 import LogForm from "./log_form";
 
 
@@ -57,23 +60,13 @@ async function get_cartridge(game_id:string) {
 }
 
 async function get_ranking(game_id:string) {
-    let url = `${process.env.NEXT_PUBLIC_GRAPHQL_URL}`;
-    let query = `{ "query": "query notices {notices {edges {node {payload}}}}" }`
+    if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
 
-    let response = await fetch(url, {method: 'POST', mode: 'cors', headers: {"Content-Type": "application/json"}, body: query});
-    if (!response.ok) {
-        throw Error(`Failed to retrieve info from GRAPHQL (${process.env.NEXT_PUBLIC_GRAPHQL_URL}).`);
-    }
-
-    let notices = await response.json();
+    let notices = await getNotices(process.env.NEXT_PUBLIC_GRAPHQL_URL);
     let ranking:Array<Score> = [];
 
-    if (!notices.data || notices.data.notices.edges.length == 0) {
-        return ranking;
-    }
-
-    for (let i = 0; i < notices.data.notices.edges.length; i++) {
-        const scoreNotice:ScoreNotice = (window as any).decodeScoreNotice(notices.data.notices.edges[i].node.payload).split(",");
+    for (let i = 0; i < notices.length; i++) {
+        const scoreNotice:ScoreNotice = (window as any).decodeScoreNotice(notices[i].payload).split(",");
 
         if (scoreNotice[3] && scoreNotice[0] == game_id) {
             insertSorted(ranking, {"user": scoreNotice[1], "score": scoreNotice[5]});
@@ -84,30 +77,26 @@ async function get_ranking(game_id:string) {
 }
 
 async function get_score(game_id:string, input_index:number) {
-    let url = `${process.env.NEXT_PUBLIC_GRAPHQL_URL}`;
-    let query = `{ "query": "query noticesByInput {input(index: ${input_index}) {notices {edges {node {payload}}}}}" }`
+    if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
 
-    await sleep(1000); // sleep for 1 sec before start polling
-    while (true) {
-        let response = await fetch(url, {method: 'POST', mode: 'cors', headers: {"Content-Type": "application/json"}, body: query});
-        if (!response.ok) {
-            throw Error(`Failed to retrieve info from GRAPHQL (${process.env.NEXT_PUBLIC_GRAPHQL_URL}).`);
-        }
+    let notice;
+    try {
+        notice = await getNotice(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
+    } catch (error) {
+        // Notice not found
+        await sleep(1000);
 
-        let notice = await response.json();
-        if (!notice.data || notice.data.input.notices.edges.length == 0) {
-            await sleep(500);
-        } else {
-            const scoreNotice:ScoreNotice = (window as any).decodeScoreNotice(notice.data.input.notices.edges[0].node.payload).split(",");
-            let score:Score|null = null;
-
-            if (scoreNotice[3] && scoreNotice[0] == game_id) {
-                score = {"user": scoreNotice[1], "score": scoreNotice[5]};
-            }
-
-            return score;
-        }
+        // trying to get gameplay log error report
+        let report = await getReport(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
+        let error_msg = `Invalid gameplay!\n${ethers.utils.toUtf8String(report.payload)}`
+        throw new Error(error_msg);
     }
+
+    const scoreNotice:ScoreNotice = (window as any).decodeScoreNotice(notice.payload).split(",");
+    if (scoreNotice[0] != game_id) throw new Error(`Score does not match game: ${scoreNotice}`);
+
+    const score:Score = {"user": scoreNotice[1], "score": scoreNotice[5]};
+    return score
 }
 
 export default function Cartridge({game}:{game:CartridgeInterface|null}) {
@@ -130,28 +119,30 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
     async function log_sent(input_index:number) {
         if (!game || !ranking) return;
 
-        const score = await get_score(game.id, input_index);
+        try {
+            const score = await get_score(game.id, input_index);
+            insertSorted(ranking, score);
 
-        if (!score) {
-            alert("Your gameplay log is not valid.");
-            return;
+            setRanking(ranking);
+            handleClose();
+        } catch (error) {
+            handleClose();
+            alert((error as Error).message);
         }
 
-        insertSorted(ranking, score);
-
-        setRanking(ranking);
-
-        handleClose();
     }
 
     useEffect(() => {
-        if (!game) return;
+        if (!game || ranking) return;
 
-        get_ranking(game.id).then(
-            (ranking) => {
-                setRanking(ranking);
-            }
-        )
+        get_ranking(game.id)
+        .then((ranking) => {
+            setRanking(ranking);
+        })
+        .catch((error) => {
+            console.log(error.message);
+            setRanking([]);
+        })
 
     }, [game]);
 

@@ -7,6 +7,7 @@ import { IInputBox__factory } from "@cartesi/rollups";
 import { WalletState } from "@web3-onboard/core";
 import { useRouter } from "next/router";
 import Image from 'react-bootstrap/Image';
+import { getReport } from "@/graphql/reports";
 
 
 enum PageStatus {
@@ -53,10 +54,7 @@ async function handle_file_input(e:React.ChangeEvent<HTMLInputElement>, callback
 }
 
 async function addInput(wallet:WalletState|null, id:string, data:Uint8Array, setChunk:Function, encodeChunk:Function, encode:Function) {
-    if (!wallet) {
-        alert("Connect first to upload a cartridge.");
-        return;
-    }
+    if (!wallet) throw new Error("Connect first to upload a cartridge.");
 
     if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
         console.log("Input BOX addr not defined.");
@@ -91,37 +89,19 @@ async function addInput(wallet:WalletState|null, id:string, data:Uint8Array, set
     return receipt;
 }
 
-async function check_upload_report(input_index:number, must_have_report = true) {
-    console.log("Check upload report:", input_index, must_have_report);
-    let url = `${process.env.NEXT_PUBLIC_GRAPHQL_URL}`;
-    let query = `{"query":"query reportsByInput {input(index: ${input_index}) {reports {edges {node {index input {index} payload}}}}}"}`;
+async function check_upload_report(input_index:number) {
+    if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
 
-    await sleep(1000); // sleep for 1 sec before start polling
-    while (true) {
-        let response = await fetch(url, {method: 'POST', mode: 'cors', headers: {"Content-Type": "application/json"}, body: query});
-        if (!response.ok) {
-            throw Error(`Failed to retrieve info from GRAPHQL (${process.env.NEXT_PUBLIC_GRAPHQL_URL}).`);
-        }
+    const report = await getReport(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
 
-        let report = await response.json();
-        console.log("Report:", report);
+    const payload_utf8 = ethers.utils.toUtf8String(report.payload);
+    const payload_json = JSON.parse(payload_utf8);
 
-        if (!report.data || report.data.input.reports.edges.length == 0) {
-            await sleep(500); // "sleep" for 500 ms
-        // } else if (report.data.input.reports.edges.length == 0) {
-        //     if (must_have_report) {
-        //         throw Error("Failed to locate report.");
-        //     }
-        //     return null;
-        } else {
-            const payload_utf8 = ethers.utils.toUtf8String(report.data.input.reports.edges[0].node.payload);
-            const payload_json = JSON.parse(payload_utf8);
-
-            if (payload_json.status == "STATUS_SUCCESS") {
-                const game_id = payload_json.hash;
-                return game_id;
-            }
-        }
+    if (payload_json.status == "STATUS_SUCCESS") {
+        const game_id = payload_json.hash;
+        return game_id;
+    } else {
+        throw new Error(`Upload Failed! ${payload_json}`);
     }
 }
 
@@ -171,19 +151,18 @@ export default function CartridgeForm({wallet}: {wallet:WalletState|null}) {
         }
 
         setPageStatus(PageStatus.UploadCartridge);
-        let receipt = await addInput(wallet, cartridgeTitle, cartridge, setChunksCartridge,
-            (window as any).encodeAddCartridgeChunk, (window as any).encodeAddCartridge);
-
-        console.log(receipt);
         try {
+            let receipt = await addInput(wallet, cartridgeTitle, cartridge, setChunksCartridge,
+                (window as any).encodeAddCartridgeChunk, (window as any).encodeAddCartridge);
+
             let game_id = await check_upload_report(Number(receipt.events[0].args[1]._hex));
 
-            if (coverImage) {
+            if (coverImage && game_id) {
                 setPageStatus(PageStatus.UploadEdit);
                 receipt = await addInput(wallet, game_id, coverImage, setChunksCoverImage,
                     (window as any).encodeEditCartridgeChunk, (window as any).encodeEditCartridge);
 
-                await check_upload_report(Number(receipt.events[0].args[1]._hex), false);
+                await check_upload_report(Number(receipt.events[0].args[1]._hex));
             }
 
             // if (description) {
@@ -192,9 +171,9 @@ export default function CartridgeForm({wallet}: {wallet:WalletState|null}) {
 
             await sleep(300);
             router.push(`/cartridge/${game_id}`);
-        } catch (error:any) {
-            console.log(error);
+        } catch (error) {
             setPageStatus(PageStatus.Ready);
+            alert((error as Error).message);
         }
     }
 

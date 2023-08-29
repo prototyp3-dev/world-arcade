@@ -85,7 +85,7 @@ export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Fu
             log_sent(Number(receipt.events[0].args[1]._hex));
         } catch (error) {
             setFormStatus(FormStatus.Ready);
-            console.log(error);
+            alert((error as Error).message);
         }
     }
 
