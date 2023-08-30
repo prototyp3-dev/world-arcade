@@ -28,6 +28,7 @@
     "react-bootstrap": "^2.8.0",
     "react-dom": "18.2.0",
     "react-icons": "^4.10.1",
+    "react-use-downloader": "^1.2.4",
     "sass": "^1.65.1",
     "urql": "^4.0.5"
   },

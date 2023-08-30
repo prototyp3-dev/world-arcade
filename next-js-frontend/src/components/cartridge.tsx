@@ -10,6 +10,7 @@ import { getNotices, getNotice } from "@/graphql/notices";
 import { getReport } from "@/graphql/reports";
 import { ethers } from "ethers";
 import LogForm from "./log_form";
+import useDownloader from "react-use-downloader";
 
 
 interface Score {
@@ -56,7 +57,7 @@ async function get_cartridge(game_id:string) {
         }
     }
 
-    return allData;
+    return ethers.utils.arrayify(allData);
 }
 
 async function get_ranking(game_id:string) {
@@ -103,7 +104,9 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
     const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
     const [show, setShow] = useState(false);
     const [ranking, setRanking] = useState<Array<Score>|null>(null);
-    const [cartridge, setCartridge] = useState("");
+    const [cartridgeDownloading, setCartridgeDownloading] = useState(false);
+    const { size, elapsed, percentage, download,
+        cancel, error, isInProgress } = useDownloader();
 
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
@@ -111,9 +114,17 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
     async function download_cartridge() {
         if (!game) return;
 
+        setCartridgeDownloading(true);
         const data = await get_cartridge(game.id);
-        setCartridge(data);
+        setCartridgeDownloading(false);
+
+        const filename = "game_bin"
+        const blobFile = new Blob([data],{type:'application/octet-stream'})
+        const file = new File([blobFile], filename);
+
+        const urlObj = URL.createObjectURL(file);
         console.log("Cartridge Downloaded!");
+        download(urlObj, filename)
     }
 
     async function log_sent(input_index:number) {
@@ -168,9 +179,15 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                 <Col>
                     <div className="d-flex">
                         <a className={link_classes} role="button" onClick={download_cartridge}
-                        title="Download the cartridge to play on your machine">
-                            <span className="me-1"><RiDownload2Line/></span>Download Cartridge
-                        </a>
+                                title="Download the cartridge to play on your machine">
+                            {
+                                cartridgeDownloading
+                                ?
+                                    <Spinner className="me-1" size="sm" animation="border" variant="light"></Spinner>
+                                :
+                                    <span className="me-1"><RiDownload2Line/></span>
+                            }
+                        Download Cartridge</a>
 
                         <a className={link_classes}
                         title="Submit the log of a match/run" role="button" onClick={handleShow}>
