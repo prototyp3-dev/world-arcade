@@ -15,6 +15,8 @@ This is not a final product and should not be used as one.
 
 This project works with [sunodo](https://github.com/sunodo/sunodo), so run it you should first install sunodo.
 
+To install sunodo and to run the frontend, you will also need [npm](https://docs.npmjs.com/cli/v9/configuring-npm/install).
+
 ```shell
 npm install -g @sunodo/cli
 ```
@@ -30,9 +32,8 @@ sunodo build
 For the frontend build with:
 
 ```shell
-cd frontend
-yarn
-yarn codegen
+cd next-js-frontend
+npm run codegen
 ```
 
 ## Running
@@ -46,7 +47,7 @@ sunodo run
 Run the frontend with:
 
 ```shell
-yarn start
+npm run dev
 ```
 
 ## Interact with the Application
@@ -54,14 +55,17 @@ yarn start
 Interact with the application using the web frontend
 
 The flow of the protocol is as follows:
-1. Load Wasm to be able to encode inputs to send to the DApp.
-2. Upload cartridge riscv binary.
-3. Send cartridge riscv binary to the DApp.
-4. Get saved cartridges from DApp.
-5. Upload an image for the cartridge.
-6. Send the cartridge image to the DApp (only original cartridge sender).
-7. Remove the cartridge from the DApp (only mock wallet #0).
-8. Upload the score and log files generated from local cartridge run.
-9. Send the log and score hash to the DApp to validate score.
-10. List the Scores validated by the DApp.
-
+1. Upload a cartridge RISCV binary through the upload form available on the *Upload* page. This page can be accessed using the navbar. On upload success, you will be redirected to the game page.
+> [!IMPORTANT]
+> The folder **rnd** has a riscv binary of a "counting game" that can be used.
+2. On the game page, download the game cartridge by clicking on *Download Cartridge*. The game cartridges are saved with **game_bin** as their filename.
+3. Now, play the game using an instance of the Cartesi Machine. To do it, run the command below replacing the **path_to_downloaded_cartridge** with the actual path in your system. The game generates two files for the gameplay: the gameplay log (**log** file) and the score (**score** file).
+```shell
+docker run -it --rm -v ${path_to_downloaded_cartridge}/:/binaries sunodo/sdk:0.15.0 sh -c "cd /binaries && chmod +x game_bin && ./game_bin"
+```
+> [!NOTE]
+> Considering that the **game_bin** was saved in the **Downloads** directory, you can run the game as folowing.
+```shell
+docker run -it --rm -v ~/Downloads/:/binaries sunodo/sdk:0.15.0 sh -c "cd /binaries && chmod +x game_bin && ./game_bin"
+```
+4. Still on the game page, click on *Submit Log* to send your gameplay to the DApp. After the gameplay verification, your score should appear in the ranking.
