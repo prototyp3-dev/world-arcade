@@ -24,7 +24,7 @@ enum FormStatus {
 
 export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Function}) {
     const utf8EncodeText = new TextEncoder();
-    const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
+    const [{ wallet }] = useConnectWallet();
     const [ gameplay, setGameplay ] = useState<GameLog>({args:"", card:utf8EncodeText.encode("")} as GameLog);
     const [ disableSubmit, setDisableSubmit ] = useState(true);
     const [ formStatus, setFormStatus] = useState(FormStatus.Ready);

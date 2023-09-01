@@ -101,7 +101,7 @@ async function get_score(game_id:string, input_index:number) {
 }
 
 export default function Cartridge({game}:{game:CartridgeInterface|null}) {
-    const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
+    const [{ wallet }] = useConnectWallet();
     const [show, setShow] = useState(false);
     const [ranking, setRanking] = useState<Array<Score>|null>(null);
     const [cartridgeDownloading, setCartridgeDownloading] = useState(false);

@@ -1,9 +1,24 @@
 import { useConnectWallet } from "@web3-onboard/react";
+import { useEffect, useState } from "react";
 import { Button, Nav, Navbar, Stack } from "react-bootstrap";
 import { GiDisc } from "react-icons/gi";
 
 export default function Header({activeKey}: {activeKey:string}) {
     const [{ wallet, connecting }, connect, disconnect] = useConnectWallet()
+    const [button, setButton] = useState(<></>);
+
+    useEffect(() => {
+        setButton((
+            <Button variant="outline-light" className="position-absolute bottom-0 end-0 m-2"
+            onClick={() => (
+                wallet?
+                    disconnect(wallet)
+                :
+                    connect())}>
+                {connecting ? 'Connecting' : wallet ? 'Disconnect' : 'Connect Wallet'}
+            </Button>
+        ))
+    }, []);
 
 
     return (
@@ -47,9 +62,7 @@ export default function Header({activeKey}: {activeKey:string}) {
 
             </Stack>
 
-            <Button variant="outline-light" className="position-absolute bottom-0 end-0 m-2" onClick={() => (wallet ? disconnect(wallet) : connect())}>
-                {connecting ? 'Connecting' : wallet ? 'Disconnect' : 'Connect Wallet'}
-            </Button>
+            {button}
         </Navbar>
     );
 }

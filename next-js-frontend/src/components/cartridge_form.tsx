@@ -8,6 +8,7 @@ import { WalletState } from "@web3-onboard/core";
 import { useRouter } from "next/router";
 import Image from 'react-bootstrap/Image';
 import { getReport } from "@/graphql/reports";
+import { useConnectWallet } from "@web3-onboard/react";
 
 
 enum PageStatus {
@@ -105,8 +106,9 @@ async function check_upload_report(input_index:number) {
     }
 }
 
-export default function CartridgeForm({wallet}: {wallet:WalletState|null}) {
+export default function CartridgeForm() {
     const router = useRouter();
+    const [{ wallet }] = useConnectWallet();
     const [cartridgeTitle, setCartridgeTitle] = useState<string|null>(null);
     // const [cartridgeDescription, setCartridgeDescription] = useState<string|null>(null);
     const [cartridge, setCartridge] = useState<Uint8Array|null>(null);
