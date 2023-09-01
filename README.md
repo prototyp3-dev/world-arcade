@@ -109,8 +109,8 @@ export USER_ID=$(id -u); export GROUP_ID=$(id -g)
 Now, run the game using the command below replacing the **path_to_downloaded_cartridge_directory** with the actual path to the directory in your system. The game generates two files (in the same directory of the **game_bin** file executed) for the gameplay: the gameplay log (**log** file) and the score (**score** file).
 
 ```shell
-docker run -it --rm -v <path_to_downloaded_cartridge_directory>:/binaries -w /binaries \
-sunodo/sdk:0.15.0 sh -c "chmod +x game_bin && ./game_bin && chown $USER_ID:$GROUP_ID log score"
+docker run -it --rm -u $USER_ID:$GROUP_ID -v <path_to_downloaded_cartridge_directory>:/binaries -w /binaries \
+sunodo/sdk:0.15.0 sh -c "chmod +x game_bin && ./game_bin"
 ```
 
 4. Still on the game page, click on *Submit Log* to send your gameplay to the DApp. After the gameplay verification, your score should appear in the ranking.
