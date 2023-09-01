@@ -63,11 +63,11 @@ npm run dev
 Since the DApp will be running on top of a local Blockchain, it is necessary to configure Metamask to interact with the local blockchain RPC node. The user will need an account in this local network to pay for the transactions. Luckily, this environment has standard accounts with tokens ready to use. So, the setup has two steps:
 
 1. [Add the local network](https://metamask.zendesk.com/hc/en-us/articles/360043227612-How-to-add-a-custom-network-RPC), setting the values specified below.
-    
+
     1. RPC URL: http://localhost:8545
     2. Chain ID: 31337
 2. [Import one of the ready-to-use accounts](https://support.metamask.io/hc/en-us/articles/360015489331-How-to-import-an-Account). For this, use one of the private keys below:
-    
+
     0. 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
     1. 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
     2. 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
@@ -104,7 +104,7 @@ Now, run the game using the command below replacing the **path_to_downloaded_car
 
 ```shell
 docker run -it --rm -u $USER_ID:$GROUP_ID -v <path_to_downloaded_cartridge_directory>:/binaries -w /binaries \
-sunodo/sdk:0.15.0 sh -c "chmod +x game_bin && ./game_bin && chown nobody:nogroup log score"
+sunodo/sdk:0.15.0 sh -c "chmod +x game_bin && ./game_bin"
 ```
 
 4. Still on the game page, click on *Submit Log* to send your gameplay to the DApp. After the gameplay verification, your score should appear in the ranking.
