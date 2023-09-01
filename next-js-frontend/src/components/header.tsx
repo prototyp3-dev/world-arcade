@@ -18,7 +18,7 @@ export default function Header({activeKey}: {activeKey:string}) {
                 {connecting ? 'Connecting' : wallet ? 'Disconnect' : 'Connect Wallet'}
             </Button>
         ))
-    }, []);
+    }, [wallet, connecting]);
 
 
     return (
