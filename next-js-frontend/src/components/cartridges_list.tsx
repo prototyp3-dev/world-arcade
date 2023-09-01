@@ -28,12 +28,12 @@ export default function CartridgesList() {
             fetch(url, {method: "GET", mode: "cors"})
             .then((response) => {
                 response.json().then((inspect_res) => {
-                    let payload = JSON.parse(ethers.utils.toUtf8String(inspect_res.reports[0].payload));
-                    let cartridges:CartridgeInterface[] = [];
-
-                    for (let i = 0; i < payload.length; i++) {
-                        cartridges.push(payload[i]);
+                    let allData = "0x";
+                    for (let i = 0; i < inspect_res.reports.length; i++) {
+                        allData = allData.concat(inspect_res.reports[i].payload.substring(2));
                     }
+
+                    const cartridges:CartridgeInterface[] = JSON.parse(ethers.utils.toUtf8String(allData));
 
                     setCartridges(cartridges);
                 })

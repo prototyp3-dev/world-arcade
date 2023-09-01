@@ -10,6 +10,7 @@
 // specific language governing permissions and limitations under the License.
 
 import { createClient, fetchExchange } from "@urql/core";
+import { retryExchange } from '@urql/exchange-retry';
 import fetch from "cross-fetch";
 import {
     NoticesDocument,
@@ -91,7 +92,13 @@ export const getNotice = async (
     noticeIndex = 0
 ): Promise<Notice> => {
     // create GraphQL client to reader server
-    const client = createClient({ url, exchanges: [fetchExchange], fetch });
+    const client = createClient({ url, exchanges: [retryExchange({
+        initialDelayMs: 2000, // 2 seconds
+        maxNumberAttempts: 3,
+        retryIf: error => { // retry if has a graphql error (ex: notice not found for this inputIndex)
+            console.log("Checking error then retrying...")
+            return !!(error.graphQLErrors.length > 0);
+        }}), fetchExchange], fetch });
 
     // query the GraphQL server for the notice
     console.log(

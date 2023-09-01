@@ -112,7 +112,7 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
     const handleShow = () => setShow(true);
 
     async function download_cartridge() {
-        if (!game) return;
+        if (!game || cartridgeDownloading) return;
 
         setCartridgeDownloading(true);
         const data = await get_cartridge(game.id);
