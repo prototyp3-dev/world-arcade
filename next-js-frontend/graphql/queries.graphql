@@ -160,3 +160,33 @@ query reportsByInput($inputIndex: Int!) {
     }
   }
 }
+
+
+# INPUT
+
+query getInput($inputIndex: Int!) {
+  input(index: $inputIndex) {
+    reports {
+      edges {
+        node {
+          index
+          input {
+            index
+          }
+          payload
+        }
+      }
+    }
+    notices {
+      edges {
+        node {
+          index
+          input {
+            index
+          }
+          payload
+        }
+      }
+    }
+  }
+}

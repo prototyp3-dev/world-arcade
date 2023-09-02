@@ -7,8 +7,8 @@ import { IInputBox__factory } from "@cartesi/rollups";
 import { WalletState } from "@web3-onboard/core";
 import { useRouter } from "next/router";
 import Image from 'react-bootstrap/Image';
-import { getReport } from "@/graphql/reports";
 import { useConnectWallet } from "@web3-onboard/react";
+import { getInputReportsAndNotices } from "@/graphql/inputs";
 
 
 enum PageStatus {
@@ -93,9 +93,13 @@ async function addInput(wallet:WalletState|null, id:string, data:Uint8Array, set
 async function check_upload_report(input_index:number) {
     if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
 
-    const report = await getReport(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
+    const result = await getInputReportsAndNotices(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
 
-    const payload_utf8 = ethers.utils.toUtf8String(report.payload);
+    if (result.reports.length == 0) {
+        throw new Error(`Upload Failed! Report not found for input ${input_index}`);
+    }
+
+    const payload_utf8 = ethers.utils.toUtf8String(result.reports[0].payload);
     const payload_json = JSON.parse(payload_utf8);
 
     if (payload_json.status == "STATUS_SUCCESS") {

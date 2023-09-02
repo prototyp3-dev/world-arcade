@@ -6,8 +6,8 @@ import { RiSendPlaneFill, RiDownload2Line, RiEdit2Line } from "react-icons/ri";
 import { FaRankingStar } from "react-icons/fa6";
 import { GiPodiumWinner, GiPodiumSecond, GiPodiumThird } from "react-icons/gi";
 import { useConnectWallet } from "@web3-onboard/react";
-import { getNotices, getNotice } from "@/graphql/notices";
-import { getReport } from "@/graphql/reports";
+import { getNotices } from "@/graphql/notices";
+import { getInputReportsAndNotices } from "@/graphql/inputs";
 import { ethers } from "ethers";
 import LogForm from "./log_form";
 import useDownloader from "react-use-downloader";
@@ -80,20 +80,14 @@ async function get_ranking(game_id:string) {
 async function get_score(game_id:string, input_index:number) {
     if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
 
-    let notice;
-    try {
-        notice = await getNotice(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
-    } catch (error) {
-        // Notice not found
-        await sleep(1000);
-
-        // trying to get gameplay log error report
-        let report = await getReport(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
+    const result = await getInputReportsAndNotices(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
+    if (result.notices.length == 0) {
+        const report = result.reports[0];
         let error_msg = `Invalid gameplay!\n${ethers.utils.toUtf8String(report.payload)}`
         throw new Error(error_msg);
     }
 
-    const scoreNotice:ScoreNotice = (window as any).decodeScoreNotice(notice.payload).split(",");
+    const scoreNotice:ScoreNotice = (window as any).decodeScoreNotice(result.notices[0].payload).split(",");
     if (scoreNotice[0] != game_id) throw new Error(`Score does not match game: ${scoreNotice}`);
 
     const score:Score = {"user": scoreNotice[1], "score": scoreNotice[5]};
