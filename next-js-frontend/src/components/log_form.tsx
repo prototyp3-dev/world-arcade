@@ -11,10 +11,10 @@ import { IInputBox__factory } from "@cartesi/rollups";
 
 export interface GameLog {
     log: Uint8Array;
-    score: string;
-    resultHash: Uint8Array;
+    outCard: string;
+    outCardHash: Uint8Array;
     args: string;
-    card: Uint8Array;
+    inCard: Uint8Array;
 };
 
 enum FormStatus {
@@ -25,7 +25,7 @@ enum FormStatus {
 export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Function}) {
     const utf8EncodeText = new TextEncoder();
     const [{ wallet }] = useConnectWallet();
-    const [ gameplay, setGameplay ] = useState<GameLog>({args:"", card:utf8EncodeText.encode("")} as GameLog);
+    const [ gameplay, setGameplay ] = useState<GameLog>({args:"", inCard:utf8EncodeText.encode("")} as GameLog);
     const [ disableSubmit, setDisableSubmit ] = useState(true);
     const [ formStatus, setFormStatus] = useState(FormStatus.Ready);
 
@@ -61,9 +61,9 @@ export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Fu
 
                     input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplayChunk(
                         game_id,
-                        ethers.utils.hexlify(gameplay.resultHash),
+                        ethers.utils.hexlify(gameplay.outCardHash),
                         gameplay.args,
-                        ethers.utils.hexlify(gameplay.card),
+                        ethers.utils.hexlify(gameplay.inCard),
                         chunkToSend
                     ));
 
@@ -72,9 +72,9 @@ export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Fu
             } else {
                 input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplay(
                     game_id,
-                    ethers.utils.hexlify(gameplay.resultHash),
+                    ethers.utils.hexlify(gameplay.outCardHash),
                     gameplay.args,
-                    ethers.utils.hexlify(gameplay.card),
+                    ethers.utils.hexlify(gameplay.inCard),
                     ethers.utils.hexlify(gameplay.log)
                 ));
 
@@ -125,10 +125,10 @@ export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Fu
         reader.onload = async (readerEvent) => {
             if (readerEvent.target?.result) {
                 const s = readerEvent.target?.result.toString();
-                gameplay.score = s;
+                gameplay.outCard = s;
                 const hasher = new sha256.Hash();
                 hasher.update(utf8EncodeText.encode(s));
-                gameplay.resultHash = hasher.digest();
+                gameplay.outCardHash = hasher.digest();
 
                 checkDisableSubmit();
             }
@@ -137,7 +137,7 @@ export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Fu
     };
 
     function checkDisableSubmit() {
-        if (gameplay.log && gameplay.score && gameplay.resultHash) {
+        if (gameplay.log && gameplay.outCard && gameplay.outCardHash) {
             setDisableSubmit(false);
         } else {
             setDisableSubmit(true);

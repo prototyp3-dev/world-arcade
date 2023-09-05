@@ -13,7 +13,6 @@ import { getInputReportsAndNotices } from "@/graphql/inputs";
 enum PageStatus {
     Ready,
     UploadCartridge,
-    UploadEdit, // CoverImage upload
     Finish
 }
 
@@ -53,7 +52,7 @@ async function handle_file_input(e:React.ChangeEvent<HTMLInputElement>, callback
     reader.readAsArrayBuffer(file);
 }
 
-async function addCartridge(inputContract:ethers.Contract, title:string, description:string, cartridge:Uint8Array, setChunk:Function) {
+async function addCartridge(inputContract:ethers.Contract, cartridge:Uint8Array, setChunk:Function) {
     if (!process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND) {
         console.log("MAX SIZE TO SEND not defined.");
         return;
@@ -62,50 +61,20 @@ async function addCartridge(inputContract:ethers.Contract, title:string, descrip
     const maxSizeToSend = parseInt(process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND);
     let input;
 
+    const id = (window as any).generateCartridgeId(cartridge)
     if (cartridge.length > maxSizeToSend) {
         const chunks = (window as any).prepareData(ethers.utils.hexlify(cartridge), maxSizeToSend);
         for (let c = 0; c < chunks.length; c += 1) {
             const chunkToSend = chunks[c];
             setChunk([c+1, chunks.length]);
-            if (c != 0) {
-                description = "";
-            }
             input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
-                (window as any).encodeAddCartridgeChunk(title, description, chunkToSend));
+                (window as any).encodeAddCartridgeChunk(id, chunkToSend));
             await input.wait();
         }
     } else {
         setChunk([1,1]);
         input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
-            (window as any).encodeAddCartridge(title, description, ethers.utils.hexlify(cartridge)));
-    }
-
-    const receipt = await input.wait();
-    return receipt;
-}
-
-async function addCartridgeCard(inputContract:ethers.Contract, game_id:string, coverImage:Uint8Array, setChunk:Function) {
-    if (!process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND) {
-        console.log("MAX SIZE TO SEND not defined.");
-        return;
-    }
-
-    const maxSizeToSend = parseInt(process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND);
-    let input;
-
-    if (coverImage.length > maxSizeToSend) {
-        const chunks = (window as any).prepareData(ethers.utils.hexlify(coverImage), maxSizeToSend);
-        for (let c = 0; c < chunks.length; c += 1) {
-            const chunkToSend = chunks[c];
-            setChunk([c+1, chunks.length]);
-            input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
-                (window as any).encodeEditCartridgeChunk(game_id, chunkToSend));
-            await input.wait();
-        }
-    } else {
-        setChunk([1,1]);
-        input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
-            (window as any).encodeEditCartridge(game_id, ethers.utils.hexlify(coverImage)));
+            (window as any).encodeAddCartridge(id, ethers.utils.hexlify(cartridge)));
     }
 
     const receipt = await input.wait();
@@ -135,48 +104,21 @@ async function check_upload_report(input_index:number) {
 export default function CartridgeForm() {
     const router = useRouter();
     const [{ wallet }] = useConnectWallet();
-    const [cartridgeTitle, setCartridgeTitle] = useState<string|null>(null);
-    const [cartridgeDescription, setCartridgeDescription] = useState<string|null>(null);
     const [cartridge, setCartridge] = useState<Uint8Array|null>(null);
-    const [coverImage, setCoverImage] = useState<Uint8Array|null>(null);
-    const [coverImagePreview, setCoverImagePreview] = useState<any|null>(null);
 
-    // used for feedback when uploading a cartridge and/or coverImage
+    // used for feedback when uploading a cartridge
     const [chunksCartridge, setChunksCartridge] = useState<number[]>([0, 0]);
-    const [chunksCoverImage, setChunksCoverImage] = useState<number[]>([0, 0]);
 
     // Page Status
     const [pageStatus, setPageStatus] = useState(PageStatus.Ready);
-
-    function handle_cartridge_title(e:React.ChangeEvent<HTMLInputElement>) {
-        setCartridgeTitle(e.target.value);
-    }
-
-    function handle_cartridge_description(e:React.ChangeEvent<HTMLInputElement>) {
-        setCartridgeDescription(e.target.value);
-    }
 
     function handle_cartridge(e:React.ChangeEvent<HTMLInputElement>) {
         handle_file_input(e, setCartridge);
     }
 
-    function handle_cover_image(e:React.ChangeEvent<HTMLInputElement>) {
-        handle_file_input(e, (data:Uint8Array) => {
-            setCoverImage(data);
-
-            // Set the cover image preview to be exhibit in the form
-            const date = new Date();
-            const blobFile = new Blob([data||new Uint8Array()],{type:'image/png'})
-            const file = new File([blobFile], `${date.getMilliseconds()}`);
-            setCoverImagePreview(URL.createObjectURL(file));
-        });
-    }
-
     async function upload() {
-        if (!cartridgeTitle || cartridgeTitle.length == 0 ||
-            !cartridgeDescription || cartridgeDescription.length == 0 ||
-            !cartridge) {
-            alert("Title, Description and cartridge fields are mandatory!");
+        if (!cartridge) {
+            alert("Cartridge field is mandatory!");
             return;
         }
 
@@ -197,16 +139,9 @@ export default function CartridgeForm() {
 
         setPageStatus(PageStatus.UploadCartridge);
         try {
-            let receipt = await addCartridge(inputContract, cartridgeTitle, cartridgeDescription, cartridge, setChunksCartridge);
+            let receipt = await addCartridge(inputContract, cartridge, setChunksCartridge);
 
             let game_id = await check_upload_report(Number(receipt.events[0].args[1]._hex));
-
-            if (coverImage && game_id) {
-                setPageStatus(PageStatus.UploadEdit);
-                receipt = await addCartridgeCard(inputContract, game_id, coverImage, setChunksCoverImage);
-
-                await check_upload_report(Number(receipt.events[0].args[1]._hex));
-            }
 
             await sleep(300);
             router.push(`/cartridge/${game_id}`);
@@ -233,14 +168,6 @@ export default function CartridgeForm() {
                             <Badge bg={pageStatus > PageStatus.UploadCartridge? "success":"warning"}>
                                 Cartridge: {`${chunksCartridge[0]} of ${chunksCartridge[1]}`}
                             </Badge>
-                        {
-                            pageStatus == PageStatus.UploadEdit?
-                                <Badge bg={pageStatus > PageStatus.UploadEdit? "success":"warning"}>
-                                    Cover Image: {`${chunksCoverImage[0]} of ${chunksCoverImage[1]}`}
-                                </Badge>
-                            :
-                            <></>
-                        }
                         </Stack>
                     </div>
                 </Col>
@@ -254,39 +181,8 @@ export default function CartridgeForm() {
         <Form className="bg-dark rounded py-3 px-5 text-light">
             <h1 className="text-center mb-4">Setup your Cartridge</h1>
 
-            <Row className="mb-3">
-                <Col md="4">
-                    <div className={coverImagePreview? "text-center": "border border-light rounded"} style={coverImagePreview? {}:{height: 250}}>
-                        <Image src={coverImagePreview? coverImagePreview:""} fluid
-                            className={coverImagePreview? "border border-light rounded":""}
-                        />
-                    </div>
-                </Col>
-
-                <Col md="8">
-                    <FloatingLabel controlId="cartridgeTitle" label="Title" className="mb-4 text-dark">
-                        <Form.Control placeholder="Default Title" onChange={handle_cartridge_title} />
-                    </FloatingLabel>
-
-                    <FloatingLabel controlId="cartridgeDescription" label="Description" className="text-dark">
-                        <Form.Control as="textarea" placeholder="Default Description"
-                            style={{ height: '100px' }} onChange={handle_cartridge_description}
-                        />
-
-                    </FloatingLabel>
-                </Col>
-            </Row>
-
             <Row>
-                <Col md="4">
-                    <Form.Group controlId="formCartridgeCover">
-                        <Form.Label>Cartridge Cover Image (Optional)</Form.Label>
-                        <Form.Control type="file" accept="image/*" onChange={handle_cover_image} />
-                    </Form.Group>
-                    {additional_tx_warning()}
-                </Col>
-
-                <Col md="8">
+                <Col md="12">
                     <Form.Group controlId="formFile" className="mb-3">
                         <Form.Label>Cartridge File<span className="ms-1"><GiDisc/></span></Form.Label>
                         <Form.Control type="file" onChange={handle_cartridge} />
@@ -295,8 +191,8 @@ export default function CartridgeForm() {
             </Row>
 
             <Row>
-                <Col md={{ span: 3, offset: 6 }}>
-                    <Button variant="outline-light" className="float-end" onClick={() => {upload()}}>
+                <Col md="12">
+                    <Button variant="outline-light" className="text-center" onClick={() => {upload()}}>
                         <span className="me-1"><GiLoad/></span>Upload Cartridge
                     </Button>
                 </Col>

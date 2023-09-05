@@ -44,13 +44,13 @@ export default function Header({activeKey}: {activeKey:string}) {
 
                 <Nav variant="underline" className="justify-content-center" activeKey={activeKey}>
                     <Nav.Item>
-                        <Nav.Link href="/">Home</Nav.Link>
+                        <Nav.Link href="/">Games</Nav.Link>
                     </Nav.Item>
 
                     <Nav.Item>
                         <Nav.Link href="/upload">Upload<span className="ms-1"><GiDisc/></span></Nav.Link>
                     </Nav.Item>
-
+{/*
                     <Nav.Item>
                         <Nav.Link href="/how_to">How To</Nav.Link>
                     </Nav.Item>
@@ -58,6 +58,7 @@ export default function Header({activeKey}: {activeKey:string}) {
                     <Nav.Item>
                         <Nav.Link href="/about">About</Nav.Link>
                     </Nav.Item>
+*/}
                 </Nav>
 
             </Stack>

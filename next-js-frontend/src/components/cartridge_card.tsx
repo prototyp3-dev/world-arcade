@@ -3,17 +3,16 @@ import { Card, Image, Table } from "react-bootstrap";
 
 export interface CartridgeInterface {
     id:string,
-    name:string,
-    description:string,
     userAddress:string,
+    info:Object,
     createdAt:number,
-    card: Uint8Array;
+    cover:string,
 }
 
 export default function CartridgeCard({cartridge}: {cartridge: CartridgeInterface}) {
     const router = useRouter();
 
-    let card_on_click = () => {
+    let cover_on_click = () => {
         router.push({
           pathname: '/cartridge/[id]',
           query: { id: cartridge.id },
@@ -21,27 +20,11 @@ export default function CartridgeCard({cartridge}: {cartridge: CartridgeInterfac
     }
 
     return (
-        <Card className="bg-dark text-light mb-4 box-shadow-hover" onClick={card_on_click}>
+        <Card className="bg-dark text-light mb-4 box-shadow-hover" onClick={cover_on_click}>
+            <Image className="card-img-top cartridge-cover" src={cartridge.cover? `data:image/png;base64,${cartridge.cover}`:"/cartesi.jpg"}/>
             <Card.Body>
-                <Card.Title>{cartridge.name}</Card.Title>
-
-                <div className="text-center border border-dark rounded">
-                    <Image src={cartridge.card? `data:image/png;base64,${cartridge.card}`:"/cartesi.jpg"} height={150}/>
-                </div>
-
-
-                <Table responsive striped variant="dark" size="sm" className="mt-2" style={{fontSize: '12px'}}>
-                    <tbody>
-                        <tr>
-                            <td>Uploaded by</td>
-                            <td>{cartridge.userAddress}</td>
-                        </tr>
-                        <tr>
-                            <td>Created At</td>
-                            <td>{new Date(cartridge.createdAt*1000).toLocaleString()}</td>
-                        </tr>
-                    </tbody>
-                </Table>
+                <h5 className="card-title">{cartridge.info.name || cartridge.id}</h5>
+                <p className="card-subtitle mb-2">{cartridge.info.summary}</p>
             </Card.Body>
 
         </Card>

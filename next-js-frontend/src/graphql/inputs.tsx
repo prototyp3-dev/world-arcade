@@ -36,7 +36,7 @@ export const getInputReportsAndNotices = async (
         );
 
         const { data, error } = await client
-            .query(GetInputDocument, { inputIndex })
+            .query(GetInputDocument, { inputIndex: inputIndex })
             .toPromise();
 
 
