@@ -4,6 +4,7 @@ import { Card, Image, Table } from "react-bootstrap";
 export interface CartridgeInterface {
     id:string,
     name:string,
+    description:string,
     userAddress:string,
     createdAt:number,
     card: Uint8Array;
@@ -28,11 +29,6 @@ export default function CartridgeCard({cartridge}: {cartridge: CartridgeInterfac
                     <Image src={cartridge.card? `data:image/png;base64,${cartridge.card}`:"/cartesi.jpg"} height={150}/>
                 </div>
 
-
-                {/* <Card.Text>
-                {cartridge.description}
-                Description
-                </Card.Text> */}
 
                 <Table responsive striped variant="dark" size="sm" className="mt-2" style={{fontSize: '12px'}}>
                     <tbody>

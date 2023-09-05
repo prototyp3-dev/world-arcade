@@ -21,7 +21,10 @@ interface Score {
 // game, player, timestamp, finished, "", score, diff-score
 type ScoreNotice = [string, string, number, boolean, string, number, number]
 
-const link_classes = "mx-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
+const link_classes = "me-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
+const ranking_style = {
+    fontSize: "smaller"
+}
 
 function sleep(ms:number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -162,45 +165,57 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
     return (
         <Container className="bg-dark text-light rounded">
-            <Row className="p-2">
-                <Col md="4">
-                    <h2>{game.name}</h2>
-                    <div className="text-center">
-                        <Image src={game?.card? `data:image/png;base64,${game.card}`:"/cartesi.jpg"} height={150}/>
-                    </div>
-                </Col>
+            <div className="mb-2 d-flex align-items-baseline">
+                <h2 className="me-2">{game.name}</h2>
 
-                <Col>
-                    <div className="d-flex">
-                        <a className={link_classes} role="button" onClick={download_cartridge}
-                                title="Download the cartridge to play on your machine">
-                            {
-                                cartridgeDownloading
-                                ?
-                                    <Spinner className="me-1" size="sm" animation="border" variant="light"></Spinner>
-                                :
-                                    <span className="me-1"><RiDownload2Line/></span>
-                            }
-                        Download Cartridge</a>
+                <a className={link_classes} role="button" onClick={download_cartridge}
+                        title="Download the cartridge to play on your machine">
+                    {
+                        cartridgeDownloading
+                        ?
+                            <Spinner className="me-1" size="sm" animation="border" variant="light"></Spinner>
+                        :
+                            <span className="me-1"><RiDownload2Line/></span>
+                    }
+                Download Cartridge</a>
 
-                        <a className={link_classes}
-                        title="Submit the log of a match/run" role="button" onClick={handleShow}>
-                            <span className="me-1"><RiSendPlaneFill/></span>Submit Log
+                <a className={link_classes}
+                title="Submit the log of a match/run" role="button" onClick={handleShow}>
+                    <span className="me-1"><RiSendPlaneFill/></span>Submit Log
+                </a>
+
+                {
+                    wallet && wallet.accounts[0].address == game.userAddress
+                    ?
+                        <a className={`ms-auto ${link_classes}`}
+                        title="Edit game info" role="button" onClick={() => {}}>
+                            <span className="me-1"><RiEdit2Line/></span>Edit
                         </a>
+                    :
+                        <></>
+                }
+            </div>
 
-                        {
-                            wallet && wallet.accounts[0].address == game.userAddress
-                            ?
-                                <a className={`ms-auto ${link_classes}`}
-                                title="Edit game info" role="button" onClick={() => {}}>
-                                    <span className="me-1"><RiEdit2Line/></span>Edit
-                                </a>
-                            :
-                                <></>
-                        }
+            <div className="d-flex pb-2">
+                {/* Image */}
+                <div className="me-3">
+                    <div>
+                        <Image src={game?.card? `data:image/png;base64,${game.card}`:"/cartesi.jpg"} height={150} rounded/>
+                    </div>
+                </div>
+
+                {/* Description */}
+                <div className="me-3 flex-fill">
+                    <div className="border-bottom border-light">
+                        <h4>Description</h4>
                     </div>
 
-                    <div  className="text-center">
+                    <p className="ms-2">{game.description}</p>
+                </div>
+
+                {/* Ranking */}
+                <div>
+                    <div className="text-center text-nowrap" style={ranking_style}>
                         <h4><span className="me-1"><FaRankingStar/></span>Ranking</h4>
                         {
                             ranking !== null
@@ -252,9 +267,8 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                                 </Spinner>
                         }
                     </div>
-                </Col>
-            </Row>
-
+                </div>
+            </div>
 
             <Modal className="py-3 px-5" show={show} animation={false} onHide={handleClose}>
                 <div className="bg-dark text-light rounded border border-light">

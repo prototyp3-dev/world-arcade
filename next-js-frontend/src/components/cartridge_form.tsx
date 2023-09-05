@@ -3,8 +3,7 @@ import { Stack, Form, Row, Col, FloatingLabel, Button, Spinner, Badge } from "re
 import { GiDisc, GiLoad } from "react-icons/gi";
 import { IoWarning } from "react-icons/io5";
 import { ethers } from "ethers";
-import { IInputBox__factory } from "@cartesi/rollups";
-import { WalletState } from "@web3-onboard/core";
+import { IInputBox__factory, IInputBox } from "@cartesi/rollups";
 import { useRouter } from "next/router";
 import Image from 'react-bootstrap/Image';
 import { useConnectWallet } from "@web3-onboard/react";
@@ -54,36 +53,59 @@ async function handle_file_input(e:React.ChangeEvent<HTMLInputElement>, callback
     reader.readAsArrayBuffer(file);
 }
 
-async function addInput(wallet:WalletState|null, id:string, data:Uint8Array, setChunk:Function, encodeChunk:Function, encode:Function) {
-    if (!wallet) throw new Error("Connect first to upload a cartridge.");
-
-    if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
-        console.log("Input BOX addr not defined.");
-        return;
-    }
-
+async function addCartridge(inputContract:ethers.Contract, title:string, description:string, cartridge:Uint8Array, setChunk:Function) {
     if (!process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND) {
         console.log("MAX SIZE TO SEND not defined.");
         return;
     }
 
     const maxSizeToSend = parseInt(process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND);
-
-    const signer = new ethers.providers.Web3Provider(wallet.provider, 'any').getSigner();
-    const inputContract = new ethers.Contract(process.env.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
     let input;
 
-    if (data.length > maxSizeToSend) {
-        const chunks = (window as any).prepareData(ethers.utils.hexlify(data), maxSizeToSend);
+    if (cartridge.length > maxSizeToSend) {
+        const chunks = (window as any).prepareData(ethers.utils.hexlify(cartridge), maxSizeToSend);
         for (let c = 0; c < chunks.length; c += 1) {
             const chunkToSend = chunks[c];
             setChunk([c+1, chunks.length]);
-            input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, encodeChunk(id, chunkToSend));
+            if (c != 0) {
+                description = "";
+            }
+            input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
+                (window as any).encodeAddCartridgeChunk(title, description, chunkToSend));
             await input.wait();
         }
     } else {
         setChunk([1,1]);
-        input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, encode(id, ethers.utils.hexlify(data)));
+        input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
+            (window as any).encodeAddCartridge(title, description, ethers.utils.hexlify(cartridge)));
+    }
+
+    const receipt = await input.wait();
+    return receipt;
+}
+
+async function addCartridgeCard(inputContract:ethers.Contract, game_id:string, coverImage:Uint8Array, setChunk:Function) {
+    if (!process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND) {
+        console.log("MAX SIZE TO SEND not defined.");
+        return;
+    }
+
+    const maxSizeToSend = parseInt(process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND);
+    let input;
+
+    if (coverImage.length > maxSizeToSend) {
+        const chunks = (window as any).prepareData(ethers.utils.hexlify(coverImage), maxSizeToSend);
+        for (let c = 0; c < chunks.length; c += 1) {
+            const chunkToSend = chunks[c];
+            setChunk([c+1, chunks.length]);
+            input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
+                (window as any).encodeEditCartridgeChunk(game_id, chunkToSend));
+            await input.wait();
+        }
+    } else {
+        setChunk([1,1]);
+        input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
+            (window as any).encodeEditCartridge(game_id, ethers.utils.hexlify(coverImage)));
     }
 
     const receipt = await input.wait();
@@ -114,7 +136,7 @@ export default function CartridgeForm() {
     const router = useRouter();
     const [{ wallet }] = useConnectWallet();
     const [cartridgeTitle, setCartridgeTitle] = useState<string|null>(null);
-    // const [cartridgeDescription, setCartridgeDescription] = useState<string|null>(null);
+    const [cartridgeDescription, setCartridgeDescription] = useState<string|null>(null);
     const [cartridge, setCartridge] = useState<Uint8Array|null>(null);
     const [coverImage, setCoverImage] = useState<Uint8Array|null>(null);
     const [coverImagePreview, setCoverImagePreview] = useState<any|null>(null);
@@ -130,9 +152,9 @@ export default function CartridgeForm() {
         setCartridgeTitle(e.target.value);
     }
 
-    // function handle_cartridge_description(e:React.ChangeEvent<HTMLInputElement>) {
-    //     setCartridgeDescription(e.target.value);
-    // }
+    function handle_cartridge_description(e:React.ChangeEvent<HTMLInputElement>) {
+        setCartridgeDescription(e.target.value);
+    }
 
     function handle_cartridge(e:React.ChangeEvent<HTMLInputElement>) {
         handle_file_input(e, setCartridge);
@@ -151,29 +173,40 @@ export default function CartridgeForm() {
     }
 
     async function upload() {
-        if (!cartridgeTitle || cartridgeTitle.length == 0 || !cartridge) {
-            alert("Title and cartridge field are mandatory!");
+        if (!cartridgeTitle || cartridgeTitle.length == 0 ||
+            !cartridgeDescription || cartridgeDescription.length == 0 ||
+            !cartridge) {
+            alert("Title, Description and cartridge fields are mandatory!");
             return;
         }
 
+        if (!wallet) throw new Error("Connect first to upload a cartridge.");
+
+        if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
+            console.log("Input BOX addr not defined.");
+            return;
+        }
+
+        if (!process.env.NEXT_PUBLIC_DAPP_ADDR) {
+            console.log("DAPP addr not defined.");
+            return;
+        }
+
+        const signer = new ethers.providers.Web3Provider(wallet.provider, 'any').getSigner();
+        const inputContract = new ethers.Contract(process.env.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
+
         setPageStatus(PageStatus.UploadCartridge);
         try {
-            let receipt = await addInput(wallet, cartridgeTitle, cartridge, setChunksCartridge,
-                (window as any).encodeAddCartridgeChunk, (window as any).encodeAddCartridge);
+            let receipt = await addCartridge(inputContract, cartridgeTitle, cartridgeDescription, cartridge, setChunksCartridge);
 
             let game_id = await check_upload_report(Number(receipt.events[0].args[1]._hex));
 
             if (coverImage && game_id) {
                 setPageStatus(PageStatus.UploadEdit);
-                receipt = await addInput(wallet, game_id, coverImage, setChunksCoverImage,
-                    (window as any).encodeEditCartridgeChunk, (window as any).encodeEditCartridge);
+                receipt = await addCartridgeCard(inputContract, game_id, coverImage, setChunksCoverImage);
 
                 await check_upload_report(Number(receipt.events[0].args[1]._hex));
             }
-
-            // if (description) {
-            //     send_description();
-            // }
 
             await sleep(300);
             router.push(`/cartridge/${game_id}`);
@@ -235,13 +268,12 @@ export default function CartridgeForm() {
                         <Form.Control placeholder="Default Title" onChange={handle_cartridge_title} />
                     </FloatingLabel>
 
-                    {/* <FloatingLabel controlId="cartridgeDescription" label="Description (Optional)" className="text-dark">
+                    <FloatingLabel controlId="cartridgeDescription" label="Description" className="text-dark">
                         <Form.Control as="textarea" placeholder="Default Description"
                             style={{ height: '100px' }} onChange={handle_cartridge_description}
                         />
-                        {additional_tx_warning()}
 
-                    </FloatingLabel> */}
+                    </FloatingLabel>
                 </Col>
             </Row>
 

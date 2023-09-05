@@ -332,8 +332,9 @@ func HandleCartridgeSubmit(metadata *rollups.Metadata, payloadMap map[string]int
 
   name, ok1 := payloadMap["name"].(string)
   bin, ok2 := payloadMap["bin"].([]byte)
+  description, ok3 := payloadMap["description"].(string)
 
-  if !ok1 || !ok2 {
+  if !ok1 || !ok2 || !ok3 {
     message := "HandleCartridgeSubmit: parameters error "
     report := rollups.Report{rollups.Str2Hex(message)}
     _, err := rollups.SendReport(&report)
@@ -343,7 +344,7 @@ func HandleCartridgeSubmit(metadata *rollups.Metadata, payloadMap map[string]int
     return fmt.Errorf(message)
   }
 
-  cartridge := &model.Cartridge{Name: name, CreatedAt: metadata.Timestamp, UserAddress: metadata.MsgSender}
+  cartridge := &model.Cartridge{Name: name, Description: description, CreatedAt: metadata.Timestamp, UserAddress: metadata.MsgSender}
   return SaveCartridgeCartridge(cartridge,bin)
 }
 
@@ -353,8 +354,9 @@ func HandleCartridgeChunkSubmit(metadata *rollups.Metadata, payloadMap map[strin
 
   name, ok1 := payloadMap["name"].(string)
   bin, ok2 := payloadMap["bin"].([]byte)
+  description, ok3 := payloadMap["description"].(string)
 
-  if !ok1 || !ok2 {
+  if !ok1 || !ok2 || !ok3 {
     message := "HandleCartridgeChunkSubmit: parameters error "
     report := rollups.Report{rollups.Str2Hex(message)}
     _, err := rollups.SendReport(&report)
@@ -365,7 +367,7 @@ func HandleCartridgeChunkSubmit(metadata *rollups.Metadata, payloadMap map[strin
   }
 
   if cartridgeUploads[name] == nil {
-    cartridgeUploads[name] = &model.Cartridge{Name: name, CreatedAt: metadata.Timestamp, UserAddress: metadata.MsgSender}
+    cartridgeUploads[name] = &model.Cartridge{Name: name, Description: description, CreatedAt: metadata.Timestamp, UserAddress: metadata.MsgSender}
   }
   cartridge := cartridgeUploads[name]
 
@@ -710,8 +712,8 @@ func main() {
   // scoreNoticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string","uint[]"}) // id, player, ts, finished, result_card, scores
   scoreNoticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string","uint","bytes"}) // id, player, ts, finished, result_card, scoreslen, scoresbytes
 
-  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridge",[]string{"string name","bytes bin"}), HandleCartridgeSubmit)
-  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridgeChunk",[]string{"string name","bytes bin"}), HandleCartridgeChunkSubmit)
+  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridge",[]string{"string name", "string description", "bytes bin"}), HandleCartridgeSubmit)
+  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridgeChunk",[]string{"string name", "string description", "bytes bin"}), HandleCartridgeChunkSubmit)
   handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","editCartridgeCard",[]string{"string id","bytes bin"}), HandleEditCartridgeCard)
   handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","editCartridgeCardChunk",[]string{"string id","bytes bin"}), HandleEditCartridgeCardChunk)
   handler.HandleFixedAddressAdvance(abihandler.Address2Hex(developerAddress),abihandler.NewHeaderCodec("riv","removeCartridge",[]string{"string id"}), HandleRemove)

@@ -9,6 +9,7 @@ import (
 type Cartridge struct {
   Id string
   Name string
+  Description string
   UserAddress string
   CreatedAt uint64
   Card []byte
@@ -18,10 +19,11 @@ func (c Cartridge) MarshalJSON() ([]byte, error) {
   return json.Marshal(struct{
     Id string               `json:"id"`
     Name string             `json:"name"`
+    Description string      `json:"description"`
     UserAddress string      `json:"userAddress"`
     CreatedAt uint64        `json:"createdAt"`
     Card string             `json:"card"`
-  }{c.Id,c.Name,c.UserAddress,c.CreatedAt,base64.StdEncoding.EncodeToString(c.Card)})
+  }{c.Id,c.Name,c.Description,c.UserAddress,c.CreatedAt,base64.StdEncoding.EncodeToString(c.Card)})
 }
 
 

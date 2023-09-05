@@ -29,7 +29,7 @@ func DecodeScoreNotice(this js.Value, args []js.Value) interface{} {
     fmt.Println("Error:",err)
     return nil
   }
-  
+
   id,ok1 := value["0"].(string)
   player,ok2 := value["1"].(abihandler.Address)
   ts,ok3 := value["2"].(uint64)
@@ -80,7 +80,7 @@ func EncodeAddCartridge(this js.Value, args []js.Value) interface{} {
   if len(args) == 0 {
     return nil
   }
-  value, err := sendCartridgeCodec.Encode([]interface{}{args[0].String(),jsValue2Bin(args[1])})
+  value, err := sendCartridgeCodec.Encode([]interface{}{args[0].String(),args[1].String(),jsValue2Bin(args[2])})
   if err != nil {
     fmt.Println("Error:",err)
     return nil
@@ -92,7 +92,7 @@ func EncodeAddCartridgeChunk(this js.Value, args []js.Value) interface{} {
   if len(args) == 0 {
     return nil
   }
-  value, err := sendCartridgeChunkCodec.Encode([]interface{}{args[0].String(),jsValue2Bin(args[1])})
+  value, err := sendCartridgeChunkCodec.Encode([]interface{}{args[0].String(),args[1].String(),jsValue2Bin(args[2])})
   if err != nil {
     fmt.Println("Error:",err)
     return nil
@@ -187,8 +187,8 @@ func PrepareData(this js.Value, args []js.Value) interface{} {
 func main() {
   // noticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string","uint[]"}) // id, player, ts, finished, result_card, scores
   noticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string","uint","bytes"}) // id, player, ts, finished, result_card, scoreslen, scoresbytes
-  sendCartridgeCodec = abihandler.NewHeaderCodec("riv","addCartridge",[]string{"string","bytes"})// name, bin
-  sendCartridgeChunkCodec = abihandler.NewHeaderCodec("riv","addCartridgeChunk",[]string{"string","bytes"})// name, bin
+  sendCartridgeCodec = abihandler.NewHeaderCodec("riv","addCartridge",[]string{"string","string","bytes"})// name, description, bin
+  sendCartridgeChunkCodec = abihandler.NewHeaderCodec("riv","addCartridgeChunk",[]string{"string","string","bytes"})// name, description, bin
   removeCartridgeCodec = abihandler.NewHeaderCodec("riv","removeCartridge",[]string{"string"}) // id
   sendEditCardCodec = abihandler.NewHeaderCodec("riv","editCartridgeCard",[]string{"string","bytes"}) // id, bin
   sendEditCardChunkCodec = abihandler.NewHeaderCodec("riv","editCartridgeCardChunk",[]string{"string","bytes"}) // id, bin
