@@ -35,6 +35,9 @@ var cartridgesPath string
 var scorefilename string
 var maxReportBytes int
 
+var squashFsFilename string
+var squashFsPath string
+
 //
 // Reports
 //
@@ -326,6 +329,123 @@ func GetWasm(payloadMap map[string]interface{}) error {
 //
 // Cartridge
 //
+
+func HandleCartridgeSquashFsSubmit(metadata *rollups.Metadata, payloadMap map[string]interface{}) error {
+  name, ok1 := payloadMap["name"].(string)
+  fs, ok2 := payloadMap["fs"].([]byte)
+
+  if !ok1 || !ok2 {
+    message := "HandleCartridgeSquashFsSubmit: parameters error "
+    report := rollups.Report{rollups.Str2Hex(message)}
+    _, err := rollups.SendReport(&report)
+    if err != nil {
+      return fmt.Errorf("HandleCartridgeSquashFsSubmit: error making http request: %s", err)
+    }
+    return fmt.Errorf(message)
+  }
+
+  return processSquashFs(metadata, name, fs)
+}
+
+func HandleCartridgeSquashFsChunkSubmit(metadata *rollups.Metadata, payloadMap map[string]interface{}) error {
+  name, ok1 := payloadMap["name"].(string)
+  fs, ok2 := payloadMap["fs"].([]byte)
+
+  if !ok1 || !ok2 {
+    message := "HandleCartridgeSquashFsSubmitChunk: parameters error "
+    report := rollups.Report{rollups.Str2Hex(message)}
+    _, err := rollups.SendReport(&report)
+    if err != nil {
+      return fmt.Errorf("HandleCartridgeSquashFsSubmitChunk: error making http request: %s", err)
+    }
+    return fmt.Errorf(message)
+  }
+
+  if cartridgeUploads[name] == nil {
+    cartridgeUploads[name] = &model.Cartridge{Name: name, CreatedAt: metadata.Timestamp, UserAddress: metadata.MsgSender}
+  }
+  cartridge := cartridgeUploads[name]
+
+  if cartridge.DataChunks == nil {
+    cartridge.DataChunks = &model.DataChunks{ChunksData:make(map[uint32]*model.Chunk)}
+  }
+
+  err := processor.UpdateDataChunks(cartridge.DataChunks,fs)
+  if err != nil {
+    return fmt.Errorf("HandleCartridgeChunkSubmit: Error updating data chunks: %s",err)
+  }
+
+  if uint32(len(cartridge.DataChunks.ChunksData)) == cartridge.DataChunks.TotalChunks {
+    composed,err := processor.ComposeDataFromChunks(cartridge.DataChunks)
+    if err != nil {
+      return fmt.Errorf("HandleCartridgeChunkSubmit: Error composing data chunks: %s",err)
+    }
+    cartridge.DataChunks = nil
+    delete(cartridgeUploads,name)
+
+    return processSquashFs(metadata, name, composed)
+  }
+
+  return nil
+}
+
+
+func processSquashFs(metadata *rollups.Metadata, name string, squashfs []byte) error {
+  // create FS file to be unsquashed
+  err := ioutil.WriteFile(squashFsFilename, squashfs, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+  // unsquash
+  cmd := exec.Command("unsquashfs", squashFsFilename)
+  _, err = cmd.CombinedOutput() // stdout, err
+  if err != nil {
+    return fmt.Errorf("processSquashFs: error making http request: %s", err)
+  }
+
+  // get cartridge description
+  description, err := ioutil.ReadFile("squashfs-root/desc.txt")
+  if err != nil {
+    os.RemoveAll("squashfs-root")
+    return fmt.Errorf("processSquashFs: reading file: %s", err)
+  }
+
+  cartridge := &model.Cartridge{Name: name,Description: string(description),CreatedAt: metadata.Timestamp,UserAddress: metadata.MsgSender}
+
+  // get cartridge
+  cartridge_bin, err := ioutil.ReadFile("squashfs-root/cartridge")
+  if err != nil {
+    os.RemoveAll("squashfs-root")
+    return fmt.Errorf("processSquashFs: reading file: %s", err)
+  }
+  err = SaveCartridgeCartridge(cartridge, cartridge_bin)
+  if err != nil {
+    os.RemoveAll("squashfs-root")
+    return fmt.Errorf("processSquashFs: failed to save cartridge: %s", err)
+  }
+
+  // search for cartridge card (optional)
+  var card_bin []byte
+  files, err := os.ReadDir("squashfs-root")
+  if err != nil {
+    os.RemoveAll("squashfs-root")
+    return fmt.Errorf("Error reading unsquashed file system: %s", err)
+  }
+  for _, file := range files {
+    if strings.HasPrefix(file.Name(), "card") {
+      card_bin, err = ioutil.ReadFile("squashfs-root/"+file.Name())
+    }
+  }
+  if len(card_bin) > 0 {
+    cartridge.Card = card_bin
+  }
+
+  os.RemoveAll("squashfs-root")
+  os.RemoveAll(squashFsFilename)
+
+  return nil
+}
 
 func HandleCartridgeSubmit(metadata *rollups.Metadata, payloadMap map[string]interface{}) error {
   // infolog.Println("HandleCartridgeSubmit: payload:",payloadMap)
@@ -706,12 +826,21 @@ func main() {
     log.Panicln(err)
   }
 
+  squashFsFilename = "squashFsFile"
+  squashFsPath = "squashFs/"
+  err = os.MkdirAll(squashFsPath, os.ModePerm)
+  if err != nil {
+    log.Panicln(err)
+  }
+
   handler := abihandler.NewAbiHandler()
   // handler.SetDebug()
 
   // scoreNoticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string","uint[]"}) // id, player, ts, finished, result_card, scores
   scoreNoticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string","uint","bytes"}) // id, player, ts, finished, result_card, scoreslen, scoresbytes
 
+  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridgeSquashFs",[]string{"string name", "bytes fs"}), HandleCartridgeSquashFsSubmit)
+  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridgeSquashFsChunk",[]string{"string name", "bytes fs"}), HandleCartridgeSquashFsChunkSubmit)
   handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridge",[]string{"string name", "string description", "bytes bin"}), HandleCartridgeSubmit)
   handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridgeChunk",[]string{"string name", "string description", "bytes bin"}), HandleCartridgeChunkSubmit)
   handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","editCartridgeCard",[]string{"string id","bytes bin"}), HandleEditCartridgeCard)

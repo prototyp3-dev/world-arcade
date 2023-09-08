@@ -3,11 +3,11 @@ import { Stack, Form, Row, Col, FloatingLabel, Button, Spinner, Badge } from "re
 import { GiDisc, GiLoad } from "react-icons/gi";
 import { IoWarning } from "react-icons/io5";
 import { ethers } from "ethers";
-import { IInputBox__factory, IInputBox } from "@cartesi/rollups";
+import { IInputBox__factory } from "@cartesi/rollups";
 import { useRouter } from "next/router";
 import Image from 'react-bootstrap/Image';
 import { useConnectWallet } from "@web3-onboard/react";
-import { getInputReportsAndNotices } from "@/graphql/inputs";
+import { check_upload_report, handle_file_input, sleep } from "@/utils/utils";
 
 
 enum PageStatus {
@@ -15,10 +15,6 @@ enum PageStatus {
     UploadCartridge,
     UploadEdit, // CoverImage upload
     Finish
-}
-
-function sleep(ms:number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function additional_tx_warning() {
@@ -30,28 +26,6 @@ function additional_tx_warning() {
     );
 }
 
-async function handle_file_input(e:React.ChangeEvent<HTMLInputElement>, callback:Function) {
-    if (!e.target.files || e.target.files.length == 0) {
-        return;
-    }
-
-    let file = e.target.files[0];
-
-    const reader = new FileReader();
-    reader.onload = async (readerEvent) => {
-        let data: ArrayBuffer;
-        if (readerEvent.target?.result instanceof ArrayBuffer) {
-            data = readerEvent.target?.result;
-        } else {
-            data = {} as ArrayBuffer;
-        }
-        if (data) {
-            callback(new Uint8Array(data));
-        }
-    };
-
-    reader.readAsArrayBuffer(file);
-}
 
 async function addCartridge(inputContract:ethers.Contract, title:string, description:string, cartridge:Uint8Array, setChunk:Function) {
     if (!process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND) {
@@ -112,26 +86,6 @@ async function addCartridgeCard(inputContract:ethers.Contract, game_id:string, c
     return receipt;
 }
 
-async function check_upload_report(input_index:number) {
-    if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
-
-    const result = await getInputReportsAndNotices(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
-
-    if (result.reports.length == 0) {
-        throw new Error(`Upload Failed! Report not found for input ${input_index}`);
-    }
-
-    const payload_utf8 = ethers.utils.toUtf8String(result.reports[0].payload);
-    const payload_json = JSON.parse(payload_utf8);
-
-    if (payload_json.status == "STATUS_SUCCESS") {
-        const game_id = payload_json.hash;
-        return game_id;
-    } else {
-        throw new Error(`Upload Failed! ${payload_json}`);
-    }
-}
-
 export default function CartridgeForm() {
     const router = useRouter();
     const [{ wallet }] = useConnectWallet();
@@ -180,7 +134,10 @@ export default function CartridgeForm() {
             return;
         }
 
-        if (!wallet) throw new Error("Connect first to upload a cartridge.");
+        if (!wallet) {
+            alert("Connect first to upload a cartridge.");
+            return;
+        }
 
         if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
             console.log("Input BOX addr not defined.");
@@ -220,7 +177,7 @@ export default function CartridgeForm() {
 
         return (
             <Row>
-                <Col md={{ span: 5, offset: 4 }}>
+                <Col md={{ span: 6, offset: 3 }}>
                     <div className="bg-dark text-center text-light py-3 rounded">
                         <h1>Uploading your Cartridge</h1>
                         <Stack gap={1} className="mb-2">
@@ -251,7 +208,7 @@ export default function CartridgeForm() {
 
 
     return (
-        <Form className="bg-dark rounded py-3 px-5 text-light">
+        <Form className="py-3 px-5 text-light">
             <h1 className="text-center mb-4">Setup your Cartridge</h1>
 
             <Row className="mb-3">

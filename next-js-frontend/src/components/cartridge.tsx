@@ -210,7 +210,7 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                         <h4>Description</h4>
                     </div>
 
-                    <p className="ms-2">{game.description}</p>
+                    <pre className="ms-2">{game.description}</pre>
                 </div>
 
                 {/* Ranking */}

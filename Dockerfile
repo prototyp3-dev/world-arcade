@@ -56,7 +56,8 @@ LABEL io.cartesi.rollups.ram_size=128Mi
 
 RUN <<EOF
 apt-get update
-apt-get install -y --no-install-recommends busybox-static=1:1.30.1-7ubuntu3
+apt-get install -y --no-install-recommends busybox-static=1:1.30.1-7ubuntu3 \
+    squashfs-tools
 rm -rf /var/lib/apt/lists/*
 EOF
 

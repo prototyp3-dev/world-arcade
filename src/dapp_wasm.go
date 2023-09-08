@@ -12,6 +12,8 @@ import (
 )
 
 var noticeCodec *abihandler.Codec
+var sendCartridgeSquashFsCodec *abihandler.Codec
+var sendCartridgeSquashFsChunkCodec *abihandler.Codec
 var sendCartridgeCodec *abihandler.Codec
 var sendCartridgeChunkCodec *abihandler.Codec
 var removeCartridgeCodec *abihandler.Codec
@@ -74,6 +76,30 @@ func jsValue2Bin(arg js.Value) []byte {
     return make([]byte,0)
   }
   return bin
+}
+
+func AddCartridgeSquashFs(this js.Value, args []js.Value) interface{} {
+  if len(args) == 0 {
+    return nil
+  }
+  value, err := sendCartridgeSquashFsCodec.Encode([]interface{}{args[0].String(),jsValue2Bin(args[1])})
+  if err != nil {
+    fmt.Println("Error:",err)
+    return nil
+  }
+  return value
+}
+
+func AddCartridgeSquashFsChunk(this js.Value, args []js.Value) interface{} {
+  if len(args) == 0 {
+    return nil
+  }
+  value, err := sendCartridgeSquashFsChunkCodec.Encode([]interface{}{args[0].String(),jsValue2Bin(args[1])})
+  if err != nil {
+    fmt.Println("Error:",err)
+    return nil
+  }
+  return value
 }
 
 func EncodeAddCartridge(this js.Value, args []js.Value) interface{} {
@@ -187,6 +213,8 @@ func PrepareData(this js.Value, args []js.Value) interface{} {
 func main() {
   // noticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string","uint[]"}) // id, player, ts, finished, result_card, scores
   noticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string","uint","bytes"}) // id, player, ts, finished, result_card, scoreslen, scoresbytes
+  sendCartridgeSquashFsCodec = abihandler.NewHeaderCodec("riv","addCartridgeSquashFs",[]string{"string", "bytes"})// name, filesystem
+  sendCartridgeSquashFsChunkCodec = abihandler.NewHeaderCodec("riv","addCartridgeSquashFsChunk",[]string{"string", "bytes"})// name, filesystem
   sendCartridgeCodec = abihandler.NewHeaderCodec("riv","addCartridge",[]string{"string","string","bytes"})// name, description, bin
   sendCartridgeChunkCodec = abihandler.NewHeaderCodec("riv","addCartridgeChunk",[]string{"string","string","bytes"})// name, description, bin
   removeCartridgeCodec = abihandler.NewHeaderCodec("riv","removeCartridge",[]string{"string"}) // id
@@ -198,6 +226,8 @@ func main() {
   wait := make(chan struct{},0)
   fmt.Println("DAPP WASM initialized")
   js.Global().Set("decodeScoreNotice", js.FuncOf(DecodeScoreNotice))
+  js.Global().Set("encodeAddCartridgeSquashFs", js.FuncOf(AddCartridgeSquashFs))
+  js.Global().Set("encodeAddCartridgeSquashFsChunk", js.FuncOf(AddCartridgeSquashFsChunk))
   js.Global().Set("encodeAddCartridge", js.FuncOf(EncodeAddCartridge))
   js.Global().Set("encodeAddCartridgeChunk", js.FuncOf(EncodeAddCartridgeChunk))
   js.Global().Set("encodeEditCartridge", js.FuncOf(EncodeEditCartridge))
