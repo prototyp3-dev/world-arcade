@@ -1,7 +1,7 @@
 # RIV Framework
 
 ```
-Cartesi Rollups version: 0.9.x
+Cartesi Rollups version: 1.0.x
 ```
 
 The RIV Framework allows users to play riscv-binaries of games on a RISC-v Cartesi Machine on the browser (WIP - currently you must run on the host), submit the game moves onchain so the session will be replayed a Cartesi Rollups DApp to generate a provable score. Naturally you can upload you own games.
@@ -17,9 +17,9 @@ This is not a final product and should not be used as one.
 - [Metamask](https://metamask.io/) (To sign transactions in the frontend)
 
 > [!IMPORTANT]
-> This project uses Sunodo version 0.6.0, after installing *npm* install sunodo using the command below.
+> This project uses Sunodo version 0.7.1, after installing *npm* install sunodo using the command below.
 ```shell
-npm install -g @sunodo/cli@0.6.0
+npm install -g @sunodo/cli@0.7.1
 ```
 
 ## Building

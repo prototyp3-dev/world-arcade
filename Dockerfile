@@ -86,9 +86,6 @@ WORKDIR /opt/cartesi/dapp
 COPY --from=build-stage /opt/build/dapp .
 COPY --from=build-stage /opt/build/dapp.wasm .
 
-COPY snake.sqfs /opt/cartesi/dapp/cartridges/
-COPY snake.rivlog /opt/cartesi/dapp/replays/
-
 ENV ROLLUP_HTTP_SERVER_URL="http://127.0.0.1:5004"
 
 ENTRYPOINT ["/opt/cartesi/bin/rollup-init"]

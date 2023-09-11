@@ -21,10 +21,10 @@ interface VerifyReplayNotice {
     cartridge_id: string,
     player_id: string,
     timestamp: number,
-    valid: bool,
+    valid: boolean,
     outcard_data: string,
     outcard_json: any,
-    score?: number,
+    score: number,
 }
 
 const link_classes = "me-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
@@ -57,6 +57,8 @@ function decodeAndParseVerifyReplayNotice(payload: string) {
         timestamp: notice_array[2],
         valid: notice_array[3],
         outcard_data: notice_array[4],
+        outcard_json: null,
+        score: 0
     }
     if (notice.outcard_data.substring(0, 4) == 'JSON') {
         notice.outcard_json = JSON.parse(notice.outcard_data.substring(4));
