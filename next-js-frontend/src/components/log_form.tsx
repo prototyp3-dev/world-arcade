@@ -158,12 +158,12 @@ export default function LogForm({game_id, log_sent}:{game_id:string, log_sent:Fu
         <Form>
             <Form.Group controlId="formFile" className="mb-3">
                 <Form.Label>Gameplay Log<span className="ms-1"><GoLog/></span></Form.Label>
-                <Form.Control title="Log generated for a gameplay" type="file" onChange={handleGameplayFileChange} />
+                <Form.Control title="Log generated for a gameplay" type="file" accept=".rivlog" onChange={handleGameplayFileChange} />
             </Form.Group>
 
             <Form.Group controlId="formFile" className="mb-3">
                 <Form.Label>Score<span className="ms-1"><GiFinishLine/></span></Form.Label>
-                <Form.Control  title="Score for the selected gameplay" type="file" onChange={handleScoreFileChange} />
+                <Form.Control  title="Score for the selected gameplay" type="file" accept=".outcard" onChange={handleScoreFileChange} />
             </Form.Group>
 
             <Button className="float-end mb-3" variant="outline-light" onClick={submit_log} disabled={disableSubmit}>
