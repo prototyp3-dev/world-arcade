@@ -9,9 +9,9 @@ import { ethers } from "ethers";
 import LogForm from "./log_form";
 import useDownloader from "react-use-downloader";
 import { useRouter } from "next/router";
+import Script from 'next/script';
 
 const link_classes = "me-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
-
 
 async function get_cartridge(game_id:string) {
     let url = `${process.env.NEXT_PUBLIC_INSPECT_URL}/cartridges/${game_id}/cartridge`;
@@ -98,8 +98,93 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
         );
     }
 
+
+    var cartridge_data: any = null;
+    async function rivemu_start() {
+        if (!game)
+            return;
+        console.log('rivemu_start');
+        if (!cartridge_data) {
+            // @ts-ignore:next-line
+            cartridge_data = await get_cartridge(game.id);
+        }
+        // @ts-ignore:next-line
+        let buf = Module._malloc(cartridge_data.length);
+        console.log(buf, cartridge_data.length);
+        // @ts-ignore:next-line
+        Module.HEAPU8.set(cartridge_data, buf);
+        // @ts-ignore:next-line
+        Module.ccall('rivemu_start', null, [ 'number', 'number' ], [ buf, cartridge_data.length ]);
+        // @ts-ignore:next-line
+        Module._free(buf);
+    }
+
+    // @ts-nocheck
+    function rivemu_stop() {
+        if (!game)
+            return;
+        console.log('rivemu_stop');
+        // @ts-ignore:next-line
+        Module.cwrap('rivemu_stop')();
+    }
+
+    if (typeof window !== 'undefined') {
+        // @ts-ignore:next-line
+        window.rivemu_on_begin = function(width : any, height : any) {
+            // @ts-ignore:next-line
+            var canvas = document.getElementById("canvas");
+            // @ts-ignore:next-line
+            canvas.width = Math.floor(768 / width) * width
+            // @ts-ignore:next-line
+            canvas.height = Math.floor((height / width) * canvas.width);
+            // force resize in WASM
+            // @ts-ignore:next-line
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        // @ts-ignore:next-line
+        window.rivemu_on_finish = function(rivlog : any, outcard : any) {
+            console.log('rivemu_on_finish');
+            console.log(rivlog);
+            console.log(outcard);
+        }
+
+        let decoder = new TextDecoder();
+        // @ts-ignore:next-line
+        window.rivemu_on_outcard_update = function(outcard : any) {
+            /*
+            let outcard_str = decoder.decode(outcard);
+            if (outcard_str.substring(0, 4) == 'JSON') {
+                let scores = JSON.parse(outcard_str.substring(4));
+            }
+            */
+        }
+    }
+
     return (
         <Container className="bg-dark text-light rounded">
+
+            <div className="d-flex pb-2 pt-4">
+                <canvas id="canvas" width={768} height={432} onContextMenu={(e)=> e.preventDefault()} tabIndex={-1}/>
+            </div>
+
+            <div className="text-center">
+                <button className="btn btn-lg btn-light m-1" role="button" onClick={rivemu_start} title="Restart">Restart</button>
+                <button className="btn btn-lg btn-light m-1" role="button" onClick={rivemu_stop} title="Stop and Submit">Stop and Submit</button>
+            </div>
+
+            <div className="d-flex pb-2">
+
+                {/* Description */}
+                <div className="flex-fill">
+                    <div className="border-bottom border-light">
+                        <h4>Description</h4>
+                    </div>
+
+                    <pre className="ms-2">{game.info.description}</pre>
+                </div>
+            </div>
+
             <div className="mb-2 d-flex align-items-baseline">
                 {
                     game.info.name
@@ -209,18 +294,6 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
             </div>
 
-            <div className="d-flex pb-2">
-
-                {/* Description */}
-                <div className="flex-fill">
-                    <div className="border-bottom border-light">
-                        <h4>Description</h4>
-                    </div>
-
-                    <pre className="ms-2 text-wrap">{game.info.description}</pre>
-                </div>
-            </div>
-
             <Modal className="py-3 px-5" show={show} animation={false} onHide={handleClose}>
                 <div className="bg-dark text-light rounded border border-light">
                     <Modal.Header closeButton closeVariant="white">
@@ -232,6 +305,7 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                     </Modal.Body>
                 </div>
             </Modal>
+            <Script src="/rivemu.js" strategy="lazyOnload"/>
         </Container>
     );
 }
