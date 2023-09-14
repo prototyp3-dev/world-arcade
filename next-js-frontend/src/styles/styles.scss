@@ -47,3 +47,7 @@ body {
     image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
     -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
 }
+
+.popover{
+    max-width: 100%; // Max Width of the popover (depending on the container!)
+}

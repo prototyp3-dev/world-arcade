@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { ethers } from "ethers";
 import CartridgeCard, { CartridgeInterface } from "./cartridge_card";
 import { Col, Row } from "react-bootstrap";
+import { get_cartridge_list } from "@/inspect/cartridge";
 
 
 function build_cards(cartridges:CartridgeInterface[]) {
@@ -21,27 +21,11 @@ export default function CartridgesList() {
     const [cartridges, setCartridges] = useState<CartridgeInterface[]>();
 
     useEffect(() => {
-        async function get_cartridge_list() {
-            // GET /cartridges
-            let url = `${process.env.NEXT_PUBLIC_INSPECT_URL}/cartridges`;
-
-            fetch(url, {method: "GET", mode: "cors"})
-            .then((response) => {
-                response.json().then((inspect_res) => {
-                    let allData = "0x";
-                    for (let i = 0; i < inspect_res.reports.length; i++) {
-                        allData = allData.concat(inspect_res.reports[i].payload.substring(2));
-                    }
-
-                    const cartridges:CartridgeInterface[] = JSON.parse(ethers.utils.toUtf8String(allData));
-
-                    setCartridges(cartridges);
-                })
-            })
-        }
-
         if (!cartridges) {
-            get_cartridge_list();
+            get_cartridge_list()
+            .then((result) => {
+                setCartridges(result);
+            });
         }
     }, [])
 

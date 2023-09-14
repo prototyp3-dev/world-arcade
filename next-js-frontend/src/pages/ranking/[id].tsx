@@ -1,10 +1,13 @@
+import { CartridgeInterface } from "@/components/cartridge_card";
 import Footer from "@/components/footer";
 import Header from "@/components/header";
 import Ranking from "@/components/ranking";
 import { getNotices } from "@/graphql/notices";
+import { get_cartridge_info } from "@/inspect/cartridge";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { Container, Spinner } from "react-bootstrap";
+import { Button, Container, Spinner } from "react-bootstrap";
+import { PiArrowFatLeftBold } from "react-icons/pi";
 
 
 export interface VerifyReplayNotice {
@@ -51,10 +54,14 @@ async function get_ranking(game_id:string) {
     let ranking:Array<VerifyReplayNotice> = [];
 
     for (let i = 0; i < notices.length; i++) {
+      try {
         const notice = decodeAndParseVerifyReplayNotice(notices[i].payload);
         if (notice.cartridge_id == game_id && notice.valid) {
           insertSorted(ranking, notice);
         }
+      } catch (error) {
+        console.log((error as Error).message)
+      }
     }
 
     return ranking;
@@ -62,16 +69,25 @@ async function get_ranking(game_id:string) {
 
 export default function RankingPage() {
     const router = useRouter();
+    const [gameId, setGameId] = useState("");
+    const [game, setGame] = useState<CartridgeInterface>();
     const [ranking, setRanking] = useState<Array<VerifyReplayNotice>|null>(null);
 
 
     useEffect(() => {
       if (router.isReady && router.query.id) {
-        let game_id = typeof router.query.id == "string"? router.query.id: router.query.id[0];
+        const game_id = typeof router.query.id == "string"? router.query.id: router.query.id[0]
+        setGameId(game_id);
 
         get_ranking(game_id)
         .then((result)=>{
             setRanking(result);
+        })
+
+        get_cartridge_info(game_id)
+        .then((result) => {
+          if (!result) return;
+          setGame(result);
         })
       }
     }, [router.isReady]);
@@ -81,6 +97,13 @@ export default function RankingPage() {
         <Header activeKey=''/>
 
         <Container className="bg-dark text-light rounded">
+
+          <div className="d-flex align-items-center">
+            <Button className="me-2" title="back to game page" variant="outline-light mt-2" onClick={() => {router.push(`/cartridge/${gameId}`)}}>
+              <PiArrowFatLeftBold/>
+            </Button>
+            <h1 className="m-0">{game?.info.name}</h1>
+          </div>
 
           {
             ranking

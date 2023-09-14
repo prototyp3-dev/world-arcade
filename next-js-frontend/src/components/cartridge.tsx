@@ -5,33 +5,13 @@ import Image from 'react-bootstrap/Image';
 import { RiSendPlaneFill, RiDownload2Line } from "react-icons/ri";
 import { FaRankingStar } from "react-icons/fa6";
 import { getInputReportsAndNotices } from "@/graphql/inputs";
-import { ethers } from "ethers";
 import LogForm from "./log_form";
 import useDownloader from "react-use-downloader";
 import { useRouter } from "next/router";
+import { get_cartridge } from "@/inspect/cartridge";
 
 const link_classes = "me-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
 
-
-async function get_cartridge(game_id:string) {
-    let url = `${process.env.NEXT_PUBLIC_INSPECT_URL}/cartridges/${game_id}/cartridge`;
-    let response = await fetch(url, {method: 'GET', mode: 'cors',});
-
-    let allData = "0x";
-    if (response.status == 200) {
-        let inspect_res = await response.json();
-
-        try {
-            for (let i = 0; i < inspect_res.reports.length; i++) {
-                allData = allData.concat(inspect_res.reports[i].payload.substring(2));
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-    return ethers.utils.arrayify(allData);
-}
 
 async function check_gameplay_result(game_id:string, input_index:number) {
     if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
@@ -217,7 +197,7 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                         <h4>Description</h4>
                     </div>
 
-                    <pre className="ms-2 text-wrap">{game.info.description}</pre>
+                    <pre className="ms-2">{game.info.description}</pre>
                 </div>
             </div>
 
