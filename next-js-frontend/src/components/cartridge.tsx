@@ -117,6 +117,9 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
         if (!cartridge_data) {
             // @ts-ignore:next-line
             cartridge_data = await get_cartridge(game.id);
+        } else {
+            // wait spinner animation to show up
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
         // @ts-ignore:next-line
         let buf = Module._malloc(cartridge_data.length);
