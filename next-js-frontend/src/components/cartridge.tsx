@@ -10,6 +10,7 @@ import useDownloader from "react-use-downloader";
 import { useRouter } from "next/router";
 import { get_cartridge } from "@/inspect/cartridge";
 import Script from 'next/script';
+import RivEmuLogForm from "./rivemu_gameplay_form";
 
 const link_classes = "me-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
 
@@ -35,13 +36,21 @@ async function check_gameplay_result(game_id:string, input_index:number) {
 
 export default function Cartridge({game}:{game:CartridgeInterface|null}) {
     const router = useRouter();
+    const [rivlog, setRivlog] = useState(new Uint8Array(0));
+    const [outcard, setOutcard] = useState("");
+    const [playBtnText, setPlayBtnText] = useState("Start");
+
     const [show, setShow] = useState(false);
+    const [showRivEmuLogForm, setShowRivEmuLogForm] = useState(false);
+
     const [cartridgeDownloading, setCartridgeDownloading] = useState(false);
-    const { size, elapsed, percentage, download,
-        cancel, error, isInProgress } = useDownloader();
+    const { download } = useDownloader();
 
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
+
+    const handleRivEmuLogFormClose = () => setShowRivEmuLogForm(false);
+    const handleRivEmuLogFormShow = () => setShowRivEmuLogForm(true);
 
     async function download_cartridge() {
         if (!game || cartridgeDownloading) return;
@@ -72,6 +81,16 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
     }
 
+    async function rivemu_log_sent(input_index:number) {
+        if (!game) return;
+
+        try {
+            await check_gameplay_result(game.id, input_index);
+        } catch (error) {
+            alert((error as Error).message);
+        }
+
+    }
 
     if (!game) {
         return (
@@ -123,16 +142,20 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
             // force resize in WASM
             // @ts-ignore:next-line
             window.dispatchEvent(new Event('resize'));
+            setPlayBtnText("Restart");
+            window.scrollTo({top: document.body.offsetHeight})
         }
 
         // @ts-ignore:next-line
-        window.rivemu_on_finish = function(rivlog : any, outcard : any) {
+        window.rivemu_on_finish = function(rivlog : ArrayBuffer, outcard : ArrayBuffer) {
             console.log('rivemu_on_finish');
-            console.log(rivlog);
-            console.log(outcard);
+
+            setRivlog(new Uint8Array(rivlog));
+            setOutcard(new TextDecoder("utf-8").decode(outcard));
+            handleRivEmuLogFormShow();
         }
 
-        let decoder = new TextDecoder();
+        //let decoder = new TextDecoder();
         // @ts-ignore:next-line
         window.rivemu_on_outcard_update = function(outcard : any) {
             /*
@@ -146,15 +169,6 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
     return (
         <Container className="bg-dark text-light rounded">
-
-            <div className="d-flex pb-2 pt-4">
-                <canvas id="canvas" width={768} height={432} onContextMenu={(e)=> e.preventDefault()} tabIndex={-1}/>
-            </div>
-
-            <div className="text-center">
-                <button className="btn btn-lg btn-light m-1" role="button" onClick={rivemu_start} title="Restart">Restart</button>
-                <button className="btn btn-lg btn-light m-1" role="button" onClick={rivemu_stop} title="Stop and Submit">Stop and Submit</button>
-            </div>
 
             <div className="mb-2 d-flex align-items-baseline">
                 {
@@ -276,6 +290,27 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                     <pre className="ms-2">{game.info.description}</pre>
                 </div>
             </div>
+
+            <div className="text-center">
+                <button className="btn btn-lg btn-light m-1" role="button" onKeyDown={(e)=> e.preventDefault()} onClick={rivemu_start} title={playBtnText}>{playBtnText}</button>
+                <button className="btn btn-lg btn-light m-1" role="button" onClick={rivemu_stop} title="Stop and Submit">Stop</button>
+            </div>
+
+            <div className="d-flex pb-2 pt-4">
+                <canvas className="border border-light" id="canvas" width={768} height={432} onContextMenu={(e)=> e.preventDefault()} tabIndex={-1}/>
+            </div>
+
+            <Modal className="py-3 px-5" show={showRivEmuLogForm} animation={false} onHide={handleRivEmuLogFormClose}>
+                <div className="bg-dark text-light rounded border border-light">
+                    <Modal.Header closeButton closeVariant="white">
+                        <Modal.Title>Your gameplay is ready</Modal.Title>
+                    </Modal.Header>
+
+                    <Modal.Body>
+                        <RivEmuLogForm game_id={game.id} rivlog={rivlog} outcard={outcard} log_sent={rivemu_log_sent}></RivEmuLogForm>
+                    </Modal.Body>
+                </div>
+            </Modal>
 
             <Modal className="py-3 px-5" show={show} animation={false} onHide={handleClose}>
                 <div className="bg-dark text-light rounded border border-light">
