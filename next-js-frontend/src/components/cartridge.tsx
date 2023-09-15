@@ -14,8 +14,7 @@ import RivEmuLogForm from "./rivemu_gameplay_form";
 
 const link_classes = "me-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
 let cartridge_data:Uint8Array;
-
-
+let desiredCanvasSize = {width:768, height:432};
 
 async function check_gameplay_result(game_id:string, input_index:number) {
     if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
@@ -40,6 +39,8 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
     const [outcard, setOutcard] = useState("");
     const [playBtnText, setPlayBtnText] = useState("Start");
     const [gameStarting, setGameStarting] = useState(false);
+    const [gameLoaded, setGameLoaded] = useState(false);
+    const [overallScore, setOverallScore] = useState(0);
 
     const [show, setShow] = useState(false);
     const [showRivEmuLogForm, setShowRivEmuLogForm] = useState(false);
@@ -141,6 +142,24 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
         Module.cwrap('rivemu_stop')();
     }
 
+    function rivemu_fullscreen() {
+        document.addEventListener('fullscreenchange', function() {
+            let canvas = document.getElementById("canvas");
+            // @ts-ignore:next-line
+            if (!window.fullScreen && canvas) {
+                // @ts-ignore:next-line
+                canvas.width = Math.floor(768 / desiredCanvasSize.width) * desiredCanvasSize.width;
+                // @ts-ignore:next-line
+                canvas.height = Math.floor((desiredCanvasSize.height / desiredCanvasSize.width) * canvas.width);
+                window.dispatchEvent(new Event('resize'));
+            }
+        }, false);
+        let canvas = document.getElementById("canvas");
+        if (canvas) {
+            canvas.requestFullscreen();
+        }
+    }
+
     if (typeof window !== 'undefined') {
         // stop wasm when page changes
         var pushState = window.history.pushState;
@@ -158,19 +177,26 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
         // @ts-ignore:next-line
         window.rivemu_on_begin = function(width : any, height : any) {
-            // @ts-ignore:next-line
-            var canvas = document.getElementById("canvas");
-            if (!canvas) return;
-            // @ts-ignore:next-line
-            canvas.width = Math.floor(768 / width) * width
-            // @ts-ignore:next-line
-            canvas.height = Math.floor((height / width) * canvas.width);
+            console.log("rivemu_on_begin");
+            desiredCanvasSize.width = width;
+            desiredCanvasSize.height = height;
             // force resize in WASM
-            // @ts-ignore:next-line
-            window.dispatchEvent(new Event('resize'));
             setPlayBtnText("Restart");
             setGameStarting(false);
-            window.scrollTo({top: canvas.offsetTop -10});
+            setGameLoaded(true);
+            var canvas = document.getElementById("canvas");
+            var canvasCover = document.getElementById("canvas-cover");
+            if (canvas) {
+                // @ts-ignore:next-line
+                canvas.width = Math.floor(768 / width) * width;
+                // @ts-ignore:next-line
+                canvas.height = Math.floor((height / width) * canvas.width);
+                canvas.style.display = "block";
+            }
+            if (canvasCover) {
+                canvasCover.style.display = "none";
+            }
+            window.dispatchEvent(new Event('resize'));
         }
 
         // @ts-ignore:next-line
@@ -182,15 +208,16 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
             handleRivEmuLogFormShow();
         }
 
-        //let decoder = new TextDecoder();
+        let decoder = new TextDecoder();
         // @ts-ignore:next-line
         window.rivemu_on_outcard_update = function(outcard : any) {
-            /*
             let outcard_str = decoder.decode(outcard);
             if (outcard_str.substring(0, 4) == 'JSON') {
                 let scores = JSON.parse(outcard_str.substring(4));
+                if (scores.score) {
+                    setOverallScore(scores.score);
+                }
             }
-            */
         }
     }
 
@@ -198,7 +225,18 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
         <Container className="bg-dark text-light rounded">
 
             <div className="pb-2 pt-4">
-                <canvas className="border border-light" id="canvas" width={768} height={432} onContextMenu={(e)=> e.preventDefault()} tabIndex={-1}/>
+                <canvas id="canvas"
+                    height={768}
+                    width={768}
+                    style={{display: 'none'}}
+                    onContextMenu={(e)=> e.preventDefault()}
+                    tabIndex={-1}/>
+                <Image id="canvas-cover" className="cartridge-cover"
+                    width={768} src={game?.cover? `data:image/png;base64,${game.cover}`:"/cartesi.jpg"}/>
+            </div>
+
+            <div className="text-center d-flex justify-content-center">
+                <h3>Score: <span className="text-info">{overallScore}</span></h3>
             </div>
 
             <div className="text-center d-flex justify-content-center">
@@ -215,8 +253,12 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                         </button>
                 }
 
-                <button className="btn btn-lg btn-light m-1" role="button" disabled={gameStarting} onClick={rivemu_stop} title="Stop and Submit">
+                <button className="btn btn-lg btn-light m-1" role="button" disabled={gameStarting || !gameLoaded} onClick={rivemu_stop} title="Stop and Submit">
                     Stop
+                </button>
+
+                <button className="btn btn-lg btn-light m-1" role="button" disabled={!gameLoaded} onClick={rivemu_fullscreen} title="Fullscreen">
+                    Fullscreen
                 </button>
             </div>
 
@@ -259,13 +301,6 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
             </div>
 
             <div className="d-flex pb-2">
-                {/* Image */}
-                <div className="me-3">
-                    <div className="cartridge-cover">
-                        <Image src={game?.cover? `data:image/png;base64,${game.cover}`:"/cartesi.jpg"} height={256} rounded/>
-                    </div>
-                </div>
-
                 {/* Info table */}
                 <div className="flex-fill">
                     <Table responsive striped variant="dark" size="sm">

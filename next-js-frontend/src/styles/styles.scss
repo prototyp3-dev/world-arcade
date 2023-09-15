@@ -51,6 +51,16 @@ body {
 .popover{
     max-width: 100%; // Max Width of the popover (depending on the container!)
 }
+
+#canvas-cover {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    object-fit: contain;
+}
+
 #canvas {
     padding-left: 0;
     padding-right: 0;
