@@ -348,7 +348,13 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                     </Modal.Header>
 
                     <Modal.Body>
-                        <RivEmuLogForm game_id={game.id} rivlog={rivlog} outcard={outcard} log_sent={rivemu_log_sent}></RivEmuLogForm>
+                        <RivEmuLogForm
+                            game_id={game.id}
+                            rivlog={rivlog}
+                            outcard={outcard}
+                            log_sent={rivemu_log_sent}
+                            showModal={(option:boolean) => {setShowRivEmuLogForm(option)}}
+                            ></RivEmuLogForm>
                     </Modal.Body>
                 </div>
             </Modal>

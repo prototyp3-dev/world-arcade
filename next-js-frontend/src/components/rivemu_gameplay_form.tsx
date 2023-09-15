@@ -1,5 +1,5 @@
 import { useConnectWallet } from "@web3-onboard/react";
-import { useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Button, Spinner } from "react-bootstrap";
 import { ethers } from "ethers";
 import * as sha256 from "fast-sha256";
@@ -29,8 +29,9 @@ function prepare_game_log(rivlog: Uint8Array, outcard: string) {
     return wasmRivemuLog;
 }
 
-export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent}:{game_id:string, rivlog:Uint8Array, outcard:string, log_sent:Function}) {
-    const [{ wallet }] = useConnectWallet();
+export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent, showModal}:
+    {game_id:string, rivlog:Uint8Array, outcard:string, log_sent:Function, showModal:Function}) {
+    const [{ wallet }, connect] = useConnectWallet();
     const [ submitStatus, setSubmitStatus] = useState(SubmitStatus.Ready);
     const { download, isInProgress } = useDownloader();
 
@@ -38,6 +39,9 @@ export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent}:{game
     async function submit() {
         if (!wallet) {
             alert("Connect first to upload a gameplay log.");
+            showModal(false);
+            await connect();
+            showModal(true);
             return;
         }
 
