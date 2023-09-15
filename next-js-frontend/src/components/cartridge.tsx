@@ -109,6 +109,11 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
             return;
         console.log('rivemu_start');
         setGameStarting(true);
+        // @ts-ignore:next-line
+        if (Module.quited) { // restart wasm when back to page
+            // @ts-ignore:next-line
+            Module._main();
+        }
         if (!cartridge_data) {
             // @ts-ignore:next-line
             cartridge_data = await get_cartridge(game.id);
@@ -134,6 +139,20 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
     }
 
     if (typeof window !== 'undefined') {
+        // stop wasm when page changes
+        var pushState = window.history.pushState;
+        window.history.pushState = function() {
+            // @ts-ignore:next-line
+            pushState.apply(window.history, arguments);
+            // @ts-ignore:next-line
+            if (!Module.quited) {
+                // @ts-ignore:next-line
+                Module._quit();
+                // @ts-ignore:next-line
+                Module.quited = true;
+            }
+        };
+
         // @ts-ignore:next-line
         window.rivemu_on_begin = function(width : any, height : any) {
             // @ts-ignore:next-line
