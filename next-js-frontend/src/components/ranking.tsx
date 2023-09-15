@@ -20,6 +20,8 @@ function get_ranking_icon(position:number) {
 }
 
 function build_popover(obj:Array<any>) {
+    if (obj.length == 0) return;
+
     const keys = Object.keys(obj[0]);
     return (
         <Popover>
@@ -104,6 +106,7 @@ export default function Ranking({ranking}: {ranking:Array<VerifyReplayNotice>}) 
                             {rankingItems.map((item:string, index:number) => {
                                 if (typeof replayNotice.outcard_json[item] === "object") {
                                     const popover = build_popover(replayNotice.outcard_json[item]);
+                                    if (!popover) return <td>-</td>;
 
                                     return (
                                         <td key={index}>
