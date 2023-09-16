@@ -68,3 +68,18 @@ body {
     margin-right: auto;
     display: block;
 }
+
+#page-container {
+    display:flex;
+    flex-direction:column;
+
+    /* fallback height */
+    min-height:100vh;
+
+    /* new small viewport height for modern browsers */
+    min-height:100svh;
+}
+
+.navbar ~ div {
+    margin-bottom: 16px; // add margin to separe content from the footer (mb-3)
+}

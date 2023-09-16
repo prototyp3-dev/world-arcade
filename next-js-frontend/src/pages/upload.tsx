@@ -6,7 +6,7 @@ import CartridgeForm from "@/components/cartridge_form";
 export default function UploadCartridge() {
 
     return (
-        <Container>
+        <Container id="page-container">
             <Header activeKey="/upload"/>
             <CartridgeForm/>
             <Footer/>

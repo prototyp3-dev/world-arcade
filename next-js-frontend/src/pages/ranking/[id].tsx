@@ -93,7 +93,7 @@ export default function RankingPage() {
     }, [router.isReady]);
 
     return (
-      <Container>
+      <Container id="page-container">
         <Header activeKey=''/>
 
         <Container className="bg-dark text-light rounded">

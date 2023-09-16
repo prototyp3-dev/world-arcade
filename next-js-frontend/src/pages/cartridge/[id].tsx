@@ -24,7 +24,7 @@ export default function CartridgePage() {
 
 
   return (
-    <Container>
+    <Container id='page-container'>
       <Header activeKey=''/>
 
       <Cartridge game={game}/>

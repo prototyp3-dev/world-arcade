@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Stack, Form, Row, Col, FloatingLabel, Button, Spinner, Badge } from "react-bootstrap";
+import { Stack, Form, Row, Col, Button, Spinner, Badge } from "react-bootstrap";
 import { GiDisc, GiLoad } from "react-icons/gi";
-import { IoWarning } from "react-icons/io5";
 import { ethers } from "ethers";
-import { IInputBox__factory, IInputBox } from "@cartesi/rollups";
+import { IInputBox__factory } from "@cartesi/rollups";
 import { useRouter } from "next/router";
-import Image from 'react-bootstrap/Image';
 import { useConnectWallet } from "@web3-onboard/react";
 import { getInputReportsAndNotices } from "@/graphql/inputs";
 
@@ -18,15 +16,6 @@ enum PageStatus {
 
 function sleep(ms:number) {
     return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function additional_tx_warning() {
-    return (
-        <div className="text-warning">
-            <span style={{fontSize:18}}><IoWarning/></span>
-            <span style={{fontSize:12}}> Adding this info will require an additional transaction.</span>
-        </div>
-    );
 }
 
 async function handle_file_input(e:React.ChangeEvent<HTMLInputElement>, callback:Function) {
@@ -122,7 +111,10 @@ export default function CartridgeForm() {
             return;
         }
 
-        if (!wallet) throw new Error("Connect first to upload a cartridge.");
+        if (!wallet){
+            alert("Connect first to upload a cartridge.");
+            return;
+        }
 
         if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
             console.log("Input BOX addr not defined.");
