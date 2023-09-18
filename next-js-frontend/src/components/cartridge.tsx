@@ -262,16 +262,13 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                 </button>
             </div>
 
-            <div className="d-flex pb-2">
-
-                {/* Description */}
-                <div className="flex-fill">
-                    <div className="border-bottom border-light">
-                        <h4>Description</h4>
-                    </div>
-
-                    <pre className="ms-2">{game.info.description}</pre>
+            {/* Description */}
+            <div>
+                <div className="border-bottom border-light">
+                    <h4>Description</h4>
                 </div>
+
+                <pre className="ms-2">{game.info.description}</pre>
             </div>
 
             <div className="mb-2 d-flex align-items-baseline">
@@ -300,9 +297,9 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                 </a>
             </div>
 
-            <div className="d-flex pb-2">
+            <div className="pb-2">
                 {/* Info table */}
-                <div className="flex-fill">
+                <div>
                     <Table responsive striped variant="dark" size="sm">
                         <tbody>
                             {
@@ -365,15 +362,13 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                             }
                         </tbody>
                     </Table>
-
-
-                    {/* Access Ranking Page */}
-                    <a className={link_classes}
-                    title="View this game ranking" role="button" onClick={() => {router.push(`/ranking/${game.id}`)}}>
-                        <h4><span className="me-1"><FaRankingStar/></span>Ranking</h4>
-                    </a>
                 </div>
-
+                
+                {/* Access Ranking Page */}
+                <a className={link_classes}
+                title="View this game ranking" role="button" onClick={() => {router.push(`/ranking/${game.id}`)}}>
+                    <h4><span className="me-1"><FaRankingStar/></span>Ranking</h4>
+                </a>
             </div>
 
             <Modal className="py-3 px-5" show={showRivEmuLogForm} animation={false} onHide={handleRivEmuLogFormClose}>
