@@ -17,9 +17,9 @@ This is not a final product and should not be used as one.
 - [Metamask](https://metamask.io/) (To sign transactions in the frontend)
 
 > [!IMPORTANT]
-> This project uses Sunodo version 0.7.1, after installing *npm* install sunodo using the command below.
+> This project uses Sunodo version 0.8.1, after installing *npm* install sunodo using the command below.
 ```shell
-npm install -g @sunodo/cli@0.7.1
+npm install -g @sunodo/cli@0.8.1
 ```
 
 ## Building
@@ -93,24 +93,17 @@ Interact with the application using the web frontend
 > Every time the DApp backend is interrupted (Ctrl+c) and [started again](#running), a new local blockchain is create. So, to avoid inconsistencies between Metamask and the local blockchain, remember to [clear your account activity](https://support.metamask.io/hc/en-us/articles/360015488891-How-to-clear-your-account-activity-reset-account).
 
 The flow of the protocol is as follows:
-1. Upload a cartridge RISCV binary through the upload form available on the *Upload* page. This page can be accessed using the navbar. On upload success, you will be redirected to the game page.
+1. Upload a cartridge Squash File System (sqfs) through the upload form available on the *Upload* page. This page can be accessed using the navbar. On upload success, you will be redirected to the game page.
 
 > [!IMPORTANT]
-> The folder **rnd** has a riscv binary of a "counting game" that can be used, the **count_seconds_riscv**.
+> You can download some cartridges sqfs examples [here](https://github.com/edubart/riv/releases/tag/downloads).
 
-2. On the game page, download the game cartridge by clicking on *Download Cartridge*. The game cartridges are saved with **game_bin** as their filename.
+2. On the game page, read its description to get to know its controls.
 
-3. Now, play the game using an instance of the Cartesi Machine. For this, we can use a Cartesi Machine docker image. But first, store your user-id and group-id in variables so the `docker run` command can be executed using this user to avoid permission problems.
+3. Click on "Start" to initiate the game.
 
-```shell
-export USER_ID=$(id -u); export GROUP_ID=$(id -g)
-```
+4. When the gameplay finishes (beat the game or click on "Stop"), you will be able to:
+    1. Download your gameplay log to submit later.
+    2. Submit your current gameplay log for verification.
 
-Now, run the game using the command below replacing the **path_to_downloaded_cartridge_directory** with the actual path to the directory in your system. The game generates two files (in the same directory of the **game_bin** file executed) for the gameplay: the gameplay log (**log** file) and the score (**score** file).
-
-```shell
-docker run -it --rm -u $USER_ID:$GROUP_ID -v <path_to_downloaded_cartridge_directory>:/binaries -w /binaries \
-sunodo/sdk:0.15.0 sh -c "chmod +x game_bin && ./game_bin"
-```
-
-4. Still on the game page, click on *Submit Log* to send your gameplay to the DApp. After the gameplay verification, your score should appear in the ranking.
+5. If the gameplay log was submitted and validated, you can access the game's ranking to see your place in it.
