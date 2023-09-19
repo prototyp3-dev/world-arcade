@@ -8,20 +8,20 @@ import (
 
 type Cartridge struct {
   Id string
-  Name string
   UserAddress string
+  Info map[string]interface{}
   CreatedAt uint64
-  Card []byte
+  Cover []byte
   DataChunks *DataChunks
 }
 func (c Cartridge) MarshalJSON() ([]byte, error) {
   return json.Marshal(struct{
-    Id string               `json:"id"`
-    Name string             `json:"name"`
-    UserAddress string      `json:"userAddress"`
-    CreatedAt uint64        `json:"createdAt"`
-    Card string             `json:"card"`
-  }{c.Id,c.Name,c.UserAddress,c.CreatedAt,base64.StdEncoding.EncodeToString(c.Card)})
+    Id string                   `json:"id"`
+    UserAddress string          `json:"userAddress"`
+    Info map[string]interface{} `json:"info"`
+    CreatedAt uint64            `json:"createdAt"`
+    Cover string                `json:"cover"`
+  }{c.Id,c.UserAddress,c.Info,c.CreatedAt,base64.StdEncoding.EncodeToString(c.Cover)})
 }
 
 
@@ -30,8 +30,8 @@ type Replay struct {
   UserAddress string      `json:"userAddress"`
   SubmittedAt uint64      `json:"submittedAt"`
   Args string             `json:"args"`
-  ResultHash []byte       `json:"resultHash"`
-  Card []byte             `json:"card"`
+  OutCardHash []byte      `json:"outCardHash"`
+  InCard []byte           `json:"inCard"`
   DataChunks *DataChunks  `json:"dataChunks"`
 }
 
@@ -73,7 +73,7 @@ const (
 )
 
 func (s Status) String() string {
-	statuses := [...]string{"STATUS_SUCCESS","STATUS_RESULT_HASH_MISMATCH","STATUS_CARTRIDGE_NOT_FOUND",
+	statuses := [...]string{"STATUS_SUCCESS","STATUS_CARTRIDGE_NOT_FOUND",
             "STATUS_CPU_TIME_EXCEEDED","STATUS_KILLED","STATUS_RUNTIME_ERROR","STATUS_UNAUTHORIZED_USER"}
 	if len(statuses) < int(s) {
 		return "STATUS_UNKNOWN"

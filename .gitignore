@@ -26,3 +26,6 @@ go.work
 log
 score
 cartridges
+*.sqfs
+*.rivlog
+*.outcard
