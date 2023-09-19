@@ -101,7 +101,7 @@ export default function Ranking({ranking}: {ranking:Array<VerifyReplayNotice>}) 
                                 {get_ranking_icon(pos)}
                             </td>
 
-                            <td>{replayNotice.player_id}</td>
+                            <td>{replayNotice.user}</td>
 
                             {rankingItems.map((item:string, index:number) => {
                                 if (typeof replayNotice.outcard_json[item] === "object") {

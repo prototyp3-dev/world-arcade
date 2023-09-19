@@ -90,6 +90,7 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
         try {
             await check_gameplay_result(game.id, input_index);
+            await setTimeout(router.reload, 300); // reload page due to Module._quit()
         } catch (error) {
             alert((error as Error).message);
         }
@@ -205,6 +206,10 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
 
             setRivlog(new Uint8Array(rivlog));
             setOutcard(new TextDecoder("utf-8").decode(outcard));
+            
+            // @ts-ignore:next-line
+            Module._quit();    // quit to allow keyboard use in the submit form
+                    
             handleRivEmuLogFormShow();
         }
 

@@ -27,18 +27,19 @@ func DecodeVerifyReplayNotice(this js.Value, args []js.Value) interface{} {
   }
 
   id,ok1 := value["0"].(string)
-  address,ok2 := value["1"].(abihandler.Address)
-  timestamp,ok3 := value["2"].(uint64)
-  valid,ok4 := value["3"].(bool)
-  outcard,ok5 := value["4"].(string)
-  if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 {
+  user,ok2 := value["1"].(string)
+  address,ok3 := value["2"].(abihandler.Address)
+  timestamp,ok4 := value["3"].(uint64)
+  valid,ok5 := value["4"].(bool)
+  outcard,ok6 := value["5"].(string)
+  if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 || !ok6 {
     fmt.Println("Error: converting values")
     return nil
   }
 
   result, err := json.Marshal(struct{
     Array []interface{}
-  }{[]interface{}{id,abihandler.Address2Hex(address),timestamp,valid,outcard}})
+  }{[]interface{}{id,user,abihandler.Address2Hex(address),timestamp,valid,outcard}})
   if err != nil {
     fmt.Println("Error:",err)
     return nil
@@ -100,7 +101,7 @@ func EncodeReplay(this js.Value, args []js.Value) interface{} {
   if len(args) == 0 {
     return nil
   }
-  value, err := sendReplayCodec.Encode([]interface{}{args[0].String(),jsValue2Bin(args[1]),args[2].String(),jsValue2Bin(args[3]),jsValue2Bin(args[4])})
+  value, err := sendReplayCodec.Encode([]interface{}{args[0].String(),args[1].String(),jsValue2Bin(args[2]),args[3].String(),jsValue2Bin(args[4]),jsValue2Bin(args[5])})
   if err != nil {
     fmt.Println("Error:",err)
     return nil
@@ -112,7 +113,7 @@ func EncodeReplayChunk(this js.Value, args []js.Value) interface{} {
   if len(args) == 0 {
     return nil
   }
-  value, err := sendReplayChunkCodec.Encode([]interface{}{args[0].String(),jsValue2Bin(args[1]),args[2].String(),jsValue2Bin(args[3]),jsValue2Bin(args[4])})
+  value, err := sendReplayChunkCodec.Encode([]interface{}{args[0].String(),args[1].String(),jsValue2Bin(args[2]),args[3].String(),jsValue2Bin(args[4]),jsValue2Bin(args[5])})
   if err != nil {
     fmt.Println("Error:",err)
     return nil
@@ -145,12 +146,12 @@ func GenerateCartridgeId(this js.Value, args []js.Value) interface{} {
 }
 
 func main() {
-  noticeCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string"}) // id, player, timestamp, valid, outcard
+  noticeCodec = abihandler.NewCodec([]string{"string","string","address","uint64","bool","string"}) // id, user, player, timestamp, valid, outcard
   sendCartridgeCodec = abihandler.NewHeaderCodec("riv","addCartridge",[]string{"string","bytes"})// id, bin
   sendCartridgeChunkCodec = abihandler.NewHeaderCodec("riv","addCartridgeChunk",[]string{"string","bytes"})// id, bin
   removeCartridgeCodec = abihandler.NewHeaderCodec("riv","removeCartridge",[]string{"string"}) // id
-  sendReplayCodec = abihandler.NewHeaderCodec("riv","verifyReplay",[]string{"string","bytes","string","bytes","bytes"}) // id, outCardHash, args, inCard, bin
-  sendReplayChunkCodec = abihandler.NewHeaderCodec("riv","verifyReplayChunk",[]string{"string","bytes","string","bytes","bytes"}) // id, outCardHash, args, inCard, bin
+  sendReplayCodec = abihandler.NewHeaderCodec("riv","verifyReplay",[]string{"string","string","bytes","string","bytes","bytes"}) // id, user, outCardHash, args, inCard, bin
+  sendReplayChunkCodec = abihandler.NewHeaderCodec("riv","verifyReplayChunk",[]string{"string","string","bytes","string","bytes","bytes"}) // id, user, outCardHash, args, inCard, bin
 
   wait := make(chan struct{},0)
   fmt.Println("DAPP WASM initialized")

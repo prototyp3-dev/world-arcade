@@ -27,6 +27,7 @@ func (c Cartridge) MarshalJSON() ([]byte, error) {
 
 type Replay struct {
   CartridgeId string      `json:"cartridgeId"`
+  User string             `json:"user"`
   UserAddress string      `json:"userAddress"`
   SubmittedAt uint64      `json:"submittedAt"`
   Args string             `json:"args"`

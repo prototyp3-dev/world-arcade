@@ -56,7 +56,7 @@ func reportSuccess(cartridgeId string) error {
 }
 
 func noticeVerifyReplay(replay *model.Replay, outCardValid bool, outCard string) error {
-  noticePayload,err := noticeVerifyCodec.Encode([]interface{}{replay.CartridgeId,replay.UserAddress,replay.SubmittedAt,outCardValid,outCard})
+  noticePayload,err := noticeVerifyCodec.Encode([]interface{}{replay.CartridgeId,replay.User,replay.UserAddress,replay.SubmittedAt,outCardValid,outCard})
   if err != nil {
     return fmt.Errorf("noticeVerifyReplay: encoding notice: %s", err)
   }
@@ -508,8 +508,9 @@ func HandleReplay(metadata *rollups.Metadata, payloadMap map[string]interface{})
   bin, ok3 := payloadMap["bin"].([]byte)
   inCard, ok4 := payloadMap["inCard"].([]byte)
   outCardHash, ok5 := payloadMap["outCardHash"].([]byte)
+  user, ok6 := payloadMap["user"].(string)
 
-  if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 {
+  if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 || !ok6 {
     message := "HandleReplay: parameters error "
     report := rollups.Report{rollups.Str2Hex(message)}
     _, err := rollups.SendReport(&report)
@@ -523,7 +524,7 @@ func HandleReplay(metadata *rollups.Metadata, payloadMap map[string]interface{})
     return reportCartridgeNotFound()
   }
 
-  replay := &model.Replay{CartridgeId: cartridgeId, SubmittedAt: metadata.Timestamp, UserAddress: metadata.MsgSender, Args: args, OutCardHash: outCardHash, InCard: inCard}
+  replay := &model.Replay{CartridgeId: cartridgeId, SubmittedAt: metadata.Timestamp, UserAddress: metadata.MsgSender, Args: args, OutCardHash: outCardHash, InCard: inCard, User: user}
   return ProcesReplay(replay, bin)
 }
 
@@ -535,8 +536,9 @@ func HandleReplayChunk(metadata *rollups.Metadata, payloadMap map[string]interfa
   bin, ok3 := payloadMap["bin"].([]byte)
   inCard, ok4 := payloadMap["inCard"].([]byte)
   outCardHash, ok5 := payloadMap["outCardHash"].([]byte)
+  user, ok6 := payloadMap["user"].(string)
 
-  if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 {
+  if !ok1 || !ok2 || !ok3 || !ok4 || !ok5 || !ok6 {
     message := "HandleReplayChunk: parameters error "
     report := rollups.Report{rollups.Str2Hex(message)}
     _, err := rollups.SendReport(&report)
@@ -554,7 +556,7 @@ func HandleReplayChunk(metadata *rollups.Metadata, payloadMap map[string]interfa
 
   // Check if cartridge
   if replayUploads[replayUploadId] == nil {
-    replayUploads[replayUploadId] = &model.Replay{CartridgeId: cartridgeId, SubmittedAt: metadata.Timestamp, UserAddress: metadata.MsgSender, Args: args, OutCardHash: outCardHash, InCard: inCard}
+    replayUploads[replayUploadId] = &model.Replay{CartridgeId: cartridgeId, SubmittedAt: metadata.Timestamp, UserAddress: metadata.MsgSender, Args: args, OutCardHash: outCardHash, InCard: inCard, User: user}
   }
   replay := replayUploads[replayUploadId]
 
@@ -675,13 +677,13 @@ func main() {
   handler := abihandler.NewAbiHandler()
   // handler.SetDebug()
 
-  noticeVerifyCodec = abihandler.NewCodec([]string{"string","address","uint64","bool","string"}) // id, player, timestamp, valid, outcard
+  noticeVerifyCodec = abihandler.NewCodec([]string{"string","string","address","uint64","bool","string"}) // id, user, player, timestamp, valid, outcard
 
   handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridge",[]string{"string id", "bytes bin"}), HandleCartridgeSubmit)
   handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","addCartridgeChunk",[]string{"string id", "bytes bin"}), HandleCartridgeChunkSubmit)
   handler.HandleFixedAddressAdvance(abihandler.Address2Hex(developerAddress),abihandler.NewHeaderCodec("riv","removeCartridge",[]string{"string id"}), HandleRemove)
-  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","verifyReplay",[]string{"string id","bytes outCardHash","string args","bytes inCard","bytes bin"}), HandleReplay)
-  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","verifyReplayChunk",[]string{"string id","bytes outCardHash","string args","bytes inCard","bytes bin"}), HandleReplayChunk)
+  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","verifyReplay",[]string{"string id","string user","bytes outCardHash","string args","bytes inCard","bytes bin"}), HandleReplay)
+  handler.HandleAdvanceRoute(abihandler.NewHeaderCodec("riv","verifyReplayChunk",[]string{"string id","string user","bytes outCardHash","string args","bytes inCard","bytes bin"}), HandleReplayChunk)
 
   handler.HandleDefault(HandleWrongWay)
 

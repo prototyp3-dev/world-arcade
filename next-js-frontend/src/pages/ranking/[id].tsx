@@ -18,6 +18,7 @@ export interface VerifyReplayNotice {
     outcard_data: string,
     outcard_json: Record<string, any>,
     score: number,
+    user: string
 }
 
 function insertSorted(ranking:Array<VerifyReplayNotice>, score:VerifyReplayNotice) {
@@ -30,10 +31,11 @@ function decodeAndParseVerifyReplayNotice(payload: string) {
   let notice_array = JSON.parse((window as any).decodeVerifyReplayNotice(payload)).Array;
   let notice: VerifyReplayNotice = {
       cartridge_id: notice_array[0],
-      player_id: notice_array[1],
-      timestamp: notice_array[2],
-      valid: notice_array[3],
-      outcard_data: notice_array[4],
+      user: notice_array[1],
+      player_id: notice_array[2],
+      timestamp: notice_array[3],
+      valid: notice_array[4],
+      outcard_data: notice_array[5],
       outcard_json: {},
       score: 0
   }

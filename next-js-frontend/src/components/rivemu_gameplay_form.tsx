@@ -1,6 +1,6 @@
 import { useConnectWallet } from "@web3-onboard/react";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Button, Spinner } from "react-bootstrap";
+import { useEffect, useState } from "react";
+import { Button, FloatingLabel, Form, Spinner } from "react-bootstrap";
 import { ethers } from "ethers";
 import * as sha256 from "fast-sha256";
 import { IInputBox__factory } from "@cartesi/rollups";
@@ -35,6 +35,10 @@ export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent, showM
     const [ submitStatus, setSubmitStatus] = useState(SubmitStatus.Ready);
     const { download, isInProgress } = useDownloader();
 
+    const [user, setUser] = useState("");
+    function handle_user(e:React.ChangeEvent<HTMLInputElement>) {
+        setUser(e.target.value);
+    }
 
     async function submit() {
         if (!wallet) {
@@ -73,6 +77,7 @@ export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent, showM
 
                     input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplayChunk(
                         game_id,
+                        c === 0? user: "",
                         ethers.utils.hexlify(gamelog.outCardHash),
                         gamelog.args,
                         ethers.utils.hexlify(gamelog.inCard),
@@ -83,7 +88,8 @@ export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent, showM
                 }
             } else {
                 input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplay(
-                    game_id,
+                    game_id,    
+                    user,
                     ethers.utils.hexlify(gamelog.outCardHash),
                     gamelog.args,
                     ethers.utils.hexlify(gamelog.inCard),
@@ -110,39 +116,49 @@ export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent, showM
             const file = new File([blobFile], "gameplay.zip");
 
             const urlObj = URL.createObjectURL(file);
-            download(urlObj, "gameplay.zip");
+            download(urlObj, `${user}_gameplay.zip`);
         });
     }
 
 
     return (
-        <div className="d-flex justify-content-center">
-            {
-                isInProgress
-                ?
-                    <div>
-                        <Spinner className="my-2" animation="border" variant="light">
-                            <span className="visually-hidden">Loading...</span>
-                        </Spinner>
-                    </div>
-                :
-                    <Button variant="outline-light" className="me-4" onClick={download_gamelog}>Download</Button>
-            }
+        <Form>
+            <div className="mb-4">
+                <FloatingLabel label="User" className="text-dark">
+                    <Form.Control onChange={handle_user} type="text" placeholder="Type your eth-address or e-mail" />
+                </FloatingLabel>
+            </div>
+            
+            <div className="d-flex justify-content-center">
+                {
+                    isInProgress
+                    ?
+                        <div>
+                            <Spinner className="my-2" animation="border" variant="light">
+                                <span className="visually-hidden">Loading...</span>
+                            </Spinner>
+                        </div>
+                    :
+                        <Button variant="outline-light" className="me-4" onClick={download_gamelog}
+                        disabled={user.length == 0}>Download</Button>
+                }
 
-            {
-                submitStatus as SubmitStatus == SubmitStatus.Sending
-                ?
-                    <div>
-                        <Spinner className="my-2" animation="border" variant="light">
-                            <span className="visually-hidden">Loading...</span>
-                        </Spinner>
-                    </div>
-                :
-                    <Button variant="outline-light" onClick={submit} disabled={submitStatus as SubmitStatus == SubmitStatus.Sent}>
-                        {submitStatus as SubmitStatus == SubmitStatus.Sent? "Validated":"Submit"}
-                    </Button>
-            }
+                {
+                    submitStatus as SubmitStatus == SubmitStatus.Sending
+                    ?
+                        <div>
+                            <Spinner className="my-2" animation="border" variant="light">
+                                <span className="visually-hidden">Loading...</span>
+                            </Spinner>
+                        </div>
+                    :
+                        <Button variant="outline-light" onClick={submit}
+                        disabled={submitStatus as SubmitStatus == SubmitStatus.Sent || user.length == 0}>
+                            {submitStatus as SubmitStatus == SubmitStatus.Sent? "Validated":"Submit"}
+                        </Button>
+                }
 
-        </div>
+            </div>
+        </Form>
     );
 }
