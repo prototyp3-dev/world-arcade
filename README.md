@@ -1,10 +1,10 @@
-# RIV Framework
+# World Arcade
 
 ```
 Cartesi Rollups version: 1.0.x
 ```
 
-The RIV Framework allows users to play riscv-binaries of games on a RISC-v Cartesi Machine on the browser (WIP - currently you must run on the host), submit the game moves onchain so the session will be replayed a Cartesi Rollups DApp to generate a provable score. Naturally you can upload you own games.
+The World Arcade allows users to play riscv-binaries of games on a RISC-v Cartesi Machine on the browser, submit the game moves onchain so the session will be replayed a Cartesi Rollups DApp to generate a provable score. Naturally you can upload you own games.
 
 DISCLAIMERS
 

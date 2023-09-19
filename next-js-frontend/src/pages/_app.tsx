@@ -18,7 +18,7 @@ const web3Onboard = init({
   appMetadata: {
     name: 'World Arcade Cartesi Rollups',
     icon: "/cartesi.jpg",
-    description: 'The RIV-Framework allows users to play riscv-binaries of games on a RISC-V Cartesi Machine on the browser. The game moves are submited onchain so the session can be replayed in a Cartesi Rollups DApp to generate a provable score.'
+    description: 'The World Arcade allows users to play riscv-binaries of games on a RISC-V Cartesi Machine on the browser. The game moves are submited onchain so the session can be replayed in a Cartesi Rollups DApp to generate a provable score.'
   },
   connect: {
     autoConnectLastWallet: true
