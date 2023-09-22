@@ -22,6 +22,18 @@ This is not a final product and should not be used as one.
 npm install -g @sunodo/cli@0.8.1
 ```
 
+To build the DApp, two images are also required: `riv/toolchain` and `sunodo/sdk:0.2.0-riv`.
+
+- To generate `riv/toolchain`, clone [RIV repository](https://github.com/edubart/riv) and in its directory do:
+```shell
+make toolchain
+```
+
+- To generate `sunodo/sdk:0.2.0-riv`, in the `world-arcade` project directory do:
+```shell
+make
+```
+
 ## Building
 
 Build with:
