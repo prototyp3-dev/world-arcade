@@ -7,7 +7,7 @@ import { IInputBox__factory } from "@cartesi/rollups";
 import { GameLog } from "./log_form";
 import useDownloader from "react-use-downloader";
 import JSZip from "jszip";
-
+import { envClient } from "@/utils/clientEnv";
 
 enum SubmitStatus {
     Ready,
@@ -45,21 +45,11 @@ export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent, showM
             return;
         }
 
-        if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
-            console.log("Input BOX addr not defined");
-            return;
-        }
-
-        if (!process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND) {
-            console.log("MAX SIZE TO SEND not defined.");
-            return;
-        }
-
         const gamelog = prepare_game_log(rivlog, outcard);
 
-        const maxSizeToSend = parseInt(process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND);
+        const maxSizeToSend = envClient.NEXT_PUBLIC_MAX_SIZE_TO_SEND;
         const signer = new ethers.providers.Web3Provider(wallet.provider, 'any').getSigner();
-        const inputContract = new ethers.Contract(process.env.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
+        const inputContract = new ethers.Contract(envClient.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
         let input;
         let receipt;
 
@@ -71,7 +61,7 @@ export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent, showM
                 for (let c = 0; c < chunks.length; c += 1) {
                     const chunkToSend = chunks[c];
 
-                    input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplayChunk(
+                    input = await inputContract.addInput(envClient.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplayChunk(
                         game_id,
                         ethers.utils.hexlify(gamelog.outCardHash),
                         gamelog.args,
@@ -82,7 +72,7 @@ export default function RivEmuLogForm({game_id, rivlog, outcard, log_sent, showM
                     receipt = await input.wait();
                 }
             } else {
-                input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplay(
+                input = await inputContract.addInput(envClient.NEXT_PUBLIC_DAPP_ADDR, (window as any).encodeReplay(
                     game_id,
                     ethers.utils.hexlify(gamelog.outCardHash),
                     gamelog.args,

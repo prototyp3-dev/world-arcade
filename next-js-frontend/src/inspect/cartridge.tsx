@@ -1,5 +1,6 @@
 import { CartridgeInterface } from "@/components/cartridge_card";
 import { ethers } from "ethers";
+import { envClient } from "@/utils/clientEnv";
 
 
 async function process_inspect_call(url: string) {
@@ -21,14 +22,14 @@ async function process_inspect_call(url: string) {
 }
 
 export const get_cartridge_info = async(game_id: string): Promise<CartridgeInterface|null> => {
-  let url = `${process.env.NEXT_PUBLIC_INSPECT_URL}/cartridges/${game_id}`;
+  let url = `${envClient.NEXT_PUBLIC_INSPECT_URL}/cartridges/${game_id}`;
   let game = await process_inspect_call(url);
 
   return game
 }
 
 export const get_cartridge = async (game_id:string): Promise<Uint8Array> => {
-    let url = `${process.env.NEXT_PUBLIC_INSPECT_URL}/cartridges/${game_id}/cartridge`;
+    let url = `${envClient.NEXT_PUBLIC_INSPECT_URL}/cartridges/${game_id}/cartridge`;
     let response = await fetch(url, {method: 'GET', mode: 'cors',});
 
     let allData = "0x";
@@ -48,7 +49,7 @@ export const get_cartridge = async (game_id:string): Promise<Uint8Array> => {
 }
 
 export const get_cartridge_list = async(): Promise<CartridgeInterface[]> => {
-    let url = `${process.env.NEXT_PUBLIC_INSPECT_URL}/cartridges`;
+    let url = `${envClient.NEXT_PUBLIC_INSPECT_URL}/cartridges`;
 
     let response = await fetch(url, {method: "GET", mode: "cors"});
     let cartridges:CartridgeInterface[] = [];

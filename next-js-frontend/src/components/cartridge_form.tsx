@@ -6,6 +6,7 @@ import { IInputBox__factory } from "@cartesi/rollups";
 import { useRouter } from "next/router";
 import { useConnectWallet } from "@web3-onboard/react";
 import { getInputReportsAndNotices } from "@/graphql/inputs";
+import { envClient } from "@/utils/clientEnv";
 
 
 enum PageStatus {
@@ -42,12 +43,7 @@ async function handle_file_input(e:React.ChangeEvent<HTMLInputElement>, callback
 }
 
 async function addCartridge(inputContract:ethers.Contract, cartridge:Uint8Array, setChunk:Function) {
-    if (!process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND) {
-        console.log("MAX SIZE TO SEND not defined.");
-        return;
-    }
-
-    const maxSizeToSend = parseInt(process.env.NEXT_PUBLIC_MAX_SIZE_TO_SEND);
+    const maxSizeToSend = envClient.NEXT_PUBLIC_MAX_SIZE_TO_SEND;
     let input;
 
     const id = (window as any).generateCartridgeId(cartridge)
@@ -56,13 +52,13 @@ async function addCartridge(inputContract:ethers.Contract, cartridge:Uint8Array,
         for (let c = 0; c < chunks.length; c += 1) {
             const chunkToSend = chunks[c];
             setChunk([c+1, chunks.length]);
-            input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
+            input = await inputContract.addInput(envClient.NEXT_PUBLIC_DAPP_ADDR,
                 (window as any).encodeAddCartridgeChunk(id, chunkToSend));
             await input.wait();
         }
     } else {
         setChunk([1,1]);
-        input = await inputContract.addInput(process.env.NEXT_PUBLIC_DAPP_ADDR,
+        input = await inputContract.addInput(envClient.NEXT_PUBLIC_DAPP_ADDR,
             (window as any).encodeAddCartridge(id, ethers.utils.hexlify(cartridge)));
     }
 
@@ -71,9 +67,7 @@ async function addCartridge(inputContract:ethers.Contract, cartridge:Uint8Array,
 }
 
 async function check_upload_report(input_index:number) {
-    if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
-
-    const result = await getInputReportsAndNotices(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
+    const result = await getInputReportsAndNotices(envClient.NEXT_PUBLIC_GRAPHQL_URL, input_index);
 
     if (result.reports.length == 0) {
         throw new Error(`Upload Failed! Report not found for input ${input_index}`);
@@ -94,6 +88,9 @@ export default function CartridgeForm() {
     const router = useRouter();
     const [{ wallet }] = useConnectWallet();
     const [cartridge, setCartridge] = useState<Uint8Array|null>(null);
+
+    //console.log(envClient)
+
 
     // used for feedback when uploading a cartridge
     const [chunksCartridge, setChunksCartridge] = useState<number[]>([0, 0]);
@@ -116,18 +113,8 @@ export default function CartridgeForm() {
             return;
         }
 
-        if (!process.env.NEXT_PUBLIC_INPUT_BOX_ADDR) {
-            console.log("Input BOX addr not defined.");
-            return;
-        }
-
-        if (!process.env.NEXT_PUBLIC_DAPP_ADDR) {
-            console.log("DAPP addr not defined.");
-            return;
-        }
-
         const signer = new ethers.providers.Web3Provider(wallet.provider, 'any').getSigner();
-        const inputContract = new ethers.Contract(process.env.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
+        const inputContract = new ethers.Contract(envClient.NEXT_PUBLIC_INPUT_BOX_ADDR, IInputBox__factory.abi, signer);
 
         setPageStatus(PageStatus.UploadCartridge);
         try {

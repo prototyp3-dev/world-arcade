@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Button, Container, Spinner } from "react-bootstrap";
 import { PiArrowFatLeftBold } from "react-icons/pi";
+import { envClient } from "@/utils/clientEnv";
 
 
 export interface VerifyReplayNotice {
@@ -48,9 +49,7 @@ function decodeAndParseVerifyReplayNotice(payload: string) {
 }
 
 async function get_ranking(game_id:string) {
-    if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
-
-    let notices = await getNotices(process.env.NEXT_PUBLIC_GRAPHQL_URL);
+    let notices = await getNotices(envClient.NEXT_PUBLIC_GRAPHQL_URL);
     let ranking:Array<VerifyReplayNotice> = [];
 
     for (let i = 0; i < notices.length; i++) {

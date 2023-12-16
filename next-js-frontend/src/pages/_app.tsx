@@ -3,6 +3,7 @@ import type { AppProps } from "next/app";
 import { Web3OnboardProvider, init } from '@web3-onboard/react'
 import injectedModule from '@web3-onboard/injected-wallets'
 import { ethers } from "ethers";
+import { envClient } from "@/utils/clientEnv";
 
 const ethereumBlockchain = {
   id: '0x1',
@@ -40,7 +41,7 @@ if (typeof window !== "undefined") {
       go.run(wasm);
     })
   } else {
-    let url = `${process.env.NEXT_PUBLIC_INSPECT_URL}/wasm`;
+    let url = `${envClient.NEXT_PUBLIC_INSPECT_URL}/wasm`;
 
     fetch(url)
     .then(response => response.json())

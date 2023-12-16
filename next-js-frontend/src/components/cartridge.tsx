@@ -11,15 +11,15 @@ import { useRouter } from "next/router";
 import { get_cartridge } from "@/inspect/cartridge";
 import Script from 'next/script';
 import RivEmuLogForm from "./rivemu_gameplay_form";
+import { envClient } from "@/utils/clientEnv";
+
 
 const link_classes = "me-2 link-light link-offset-2 link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
 let cartridge_data:Uint8Array;
 let desiredCanvasSize = {width:768, height:432};
 
 async function check_gameplay_result(game_id:string, input_index:number) {
-    if (!process.env.NEXT_PUBLIC_GRAPHQL_URL) throw new Error("Undefined graphql url.");
-
-    const result = await getInputReportsAndNotices(process.env.NEXT_PUBLIC_GRAPHQL_URL, input_index);
+    const result = await getInputReportsAndNotices(envClient.NEXT_PUBLIC_GRAPHQL_URL, input_index);
     if (result.notices.length == 0 && result.reports.length == 0) {
         throw new Error("Unable to find result from submited gameplay.");
     }
@@ -363,7 +363,7 @@ export default function Cartridge({game}:{game:CartridgeInterface|null}) {
                         </tbody>
                     </Table>
                 </div>
-                
+
                 {/* Access Ranking Page */}
                 <a className={link_classes}
                 title="View this game ranking" role="button" onClick={() => {router.push(`/ranking/${game.id}`)}}>
